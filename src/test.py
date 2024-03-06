@@ -8,10 +8,12 @@ import torch
 import warnings
 import lightning.pytorch as pl
 
-from pprint import pprint
 from argparse import ArgumentParser
 
-from src.logger import Logger
+from src.modules import (
+    Generator, Discriminator,
+    ConvGenerator, ConvDiscriminator,
+    UNetGenerator, UNetDiscriminator)
 from src.engine import Engine
 from src.dataset import EMNISTDataModule
 from src.registry import CustomProgressBar
@@ -25,7 +27,23 @@ def main(args):
 
     device = torch.device(
         f'cuda:{args.gpus[0]}' if torch.cuda.is_available() else 'cpu')
-    lm = Engine(args.output, args.hard_limit, 1)
+    if args.en_cv:
+        generator = ConvGenerator(
+            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
+        discriminator = ConvDiscriminator(
+            img_shape=(1, args.resolution, args.resolution), n_classes=62)
+    elif args.en_unet:
+        generator = UNetGenerator(z_dim=args.z_dim, img_shape=(
+            1, args.resolution, args.resolution), n_classes=62)
+        discriminator = UNetDiscriminator(
+            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
+    else:
+        generator = Generator(z_dim=args.z_dim, img_shape=(
+            args.resolution, args.resolution), n_classes=62)
+        discriminator = Discriminator(
+            img_shape=(args.resolution, args.resolution), n_classes=62)
+    lm = Engine(generator=generator, discriminator=discriminator, num_classes=62,
+                z_dim=args.z_dim, lr=args.lr, betas=args.betas, en_cv=args.en_cv or args.en_unet)
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
@@ -34,7 +52,8 @@ def main(args):
     best_checkpoint = get_elite(os.listdir(checkpoint_dirpath))
     ckp = torch.load(os.path.join(checkpoint_dirpath,
                      best_checkpoint), map_location=device)
-    lm.dnn.load_state_dict(ckp.get('dnn'))
+    lm.generator.load_state_dict(ckp.get('generator'))
+    lm.discriminator.load_state_dict(ckp.get('discriminator'))
     lm.eval()
 
     # Callbacks
@@ -50,6 +69,7 @@ def main(args):
     dm = EMNISTDataModule(
         data_dir=args.dataset, num_workers=args.num_workers,
         batch_size=args.batch_size, val_split=args.val_split,
+        image_size=args.resolution
     )
 
     if args.debug:
@@ -72,12 +92,17 @@ if __name__ == '__main__':
     # NOTE: Batch size is advised to be 1 for evaluation.
     #       That way we can also plot the results.
     parser.add_argument('--batch-size', default=1, type=int)
-    parser.add_argument('--num-workers', default=1, type=int)
-    parser.add_argument('--resolution', default=256, type=int)
-    parser.add_argument('--dataset', type=str)
+    parser.add_argument('--num-workers', default=8, type=int)
+    parser.add_argument('--resolution', default=28, type=int)
+    parser.add_argument('--dataset', default='../data', type=str)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
+    parser.add_argument('--val-split', default=0.15, type=float)
+    parser.add_argument('--en-cv', action="store_true")
+    parser.add_argument('--en-unet', action="store_true")
     parser.add_argument('--debug', action="store_true")
-
+    parser.add_argument('--z-dim', default=100, type=int)
+    parser.add_argument('--lr', default=2e-4, type=float)
+    parser.add_argument('--betas', nargs='+', default=(0.5, 0.999), type=float)
     # trainer level args
     args = parser.parse_args()
     main(args)

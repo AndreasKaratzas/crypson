@@ -1,12 +1,11 @@
 
-import pytorch_lightning as pl
-
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import EMNIST
+from lightning.pytorch import LightningDataModule
 
 
-class EMNISTDataModule(pl.LightningDataModule):
+class EMNISTDataModule(LightningDataModule):
     """Data module for the EMNIST dataset.
 
     Parameters
@@ -24,7 +23,7 @@ class EMNISTDataModule(pl.LightningDataModule):
     """
     
     def __init__(self, data_dir: str = './', batch_size: int = 64, 
-                 val_split: float = 0.2, img_size: int = 32, 
+                 val_split: float = 0.2, image_size: int = 28,
                  num_workers: int = 4):
         super().__init__()
         self.data_dir = data_dir
@@ -32,7 +31,7 @@ class EMNISTDataModule(pl.LightningDataModule):
         self.val_split = val_split
         self.num_workers = num_workers
         self.transform = transforms.Compose([
-            transforms.Resize((img_size, img_size)),
+            transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))  # Normalize to [-1, 1]
         ])

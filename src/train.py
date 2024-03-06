@@ -10,11 +10,14 @@ import torch
 import warnings
 import lightning.pytorch as pl
 
-from pprint import pprint
 from argparse import ArgumentParser
 
 from src.logger import Logger
 from src.engine import Engine
+from src.modules import (
+    Generator, Discriminator, 
+    ConvGenerator, ConvDiscriminator,
+    UNetGenerator, UNetDiscriminator)
 from src.dataset import EMNISTDataModule
 from src.registry import CustomProgressBar
 from src.info import collect_env_details
@@ -24,10 +27,6 @@ from src.utils import get_elite
 def main(args):
     ts_script = time.time()
     pl.seed_everything(args.seed)
-
-    if args.debug:
-        args.num_epochs = 1
-        args.hard_limit = 6500
 
     # create dirs for saving
     os.makedirs(os.path.join(args.output, 'log'), exist_ok=True)
@@ -70,7 +69,24 @@ def main(args):
     # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
     # ------------
     lnp.lnp('MAIN LightningModule')
-    lm = Engine(args.output, args.hard_limit, args.num_epochs)
+    if args.en_cv:
+        generator = ConvGenerator(
+            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
+        discriminator = ConvDiscriminator(
+            img_shape=(1, args.resolution, args.resolution), n_classes=62)
+    elif args.en_unet:
+        generator = UNetGenerator(z_dim=args.z_dim, img_shape=(
+            1, args.resolution, args.resolution), n_classes=62)
+        discriminator = UNetDiscriminator(
+            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
+    else:
+        generator = Generator(z_dim=args.z_dim, img_shape=(
+            args.resolution, args.resolution), n_classes=62)
+        discriminator = Discriminator(
+            img_shape=(args.resolution, args.resolution), n_classes=62)
+    lm = Engine(generator=generator, discriminator=discriminator, 
+                num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
+                clip_grad_norm=args.clip_grad_norm, en_cv=args.en_cv or args.en_unet)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -96,15 +112,17 @@ def main(args):
             best_checkpoint = get_elite(os.listdir(checkpoint_dirpath))
             if os.path.exists(os.path.join(checkpoint_dirpath, best_checkpoint)):
                 ckp = torch.load(os.path.join(checkpoint_dirpath, best_checkpoint), map_location=device)
-                lm.dnn.load_state_dict(ckp.get('dnn'))
+                lm.generator.load_state_dict(ckp.get('generator'))
+                lm.discriminator.load_state_dict(ckp.get('discriminator'))
             else:
                 print(f'No checkpoint found at {os.path.join(checkpoint_dirpath, best_checkpoint)}')
         else:
             ckp = torch.load(args.ckpt_path, map_location=device)
-            lm.dnn.load_state_dict(ckp.get('dnn'))
+            lm.generator.load_state_dict(ckp.get('generator'))
+            lm.discriminator.load_state_dict(ckp.get('discriminator'))
 
     cbModelCheckpoint = pl.callbacks.ModelCheckpoint(
-        save_top_k=10,
+        save_top_k=5,
         monitor="train_loss",
         mode="min",
         dirpath=checkpoint_dirpath,
@@ -119,12 +137,10 @@ def main(args):
                          accelerator='gpu', devices=args.gpus,
                          logger=[tb_logger, wandb_logger],
                          callbacks=l_callbacks,
-                         enable_checkpointing=True,
-                         gradient_clip_val=args.clip_grad_norm)
-    dm = EMNISTDataModule(
-        data_dir=args.dataset, num_workers=args.num_workers,
-        batch_size=args.batch_size, val_split=args.val_split,
-    )
+                         enable_checkpointing=True,)
+    dm = EMNISTDataModule(data_dir=args.dataset, num_workers=args.num_workers,
+                          batch_size=args.batch_size, val_split=args.val_split, 
+                          image_size=args.resolution, )
 
     # fit
     lnp.lnp('MAIN fit')
@@ -142,18 +158,21 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--output', default='train', type=str)
     parser.add_argument('--experiment', default='DCVae', type=str)
-    parser.add_argument('--batch-size', default=8, type=int)
+    parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
     parser.add_argument('--num-epochs', default=20, type=int)
     parser.add_argument('--es-patience', default=50, type=int)
-    parser.add_argument('--val-split', default=0.2, type=float)
+    parser.add_argument('--en-cv', action="store_true")
+    parser.add_argument('--en-unet', action="store_true")
+    parser.add_argument('--val-split', default=0.15, type=float)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--resume', action="store_true")
-    parser.add_argument('--cache', action="store_true")
-    parser.add_argument('--debug', action="store_true")
+    parser.add_argument('--z-dim', default=100, type=int)
+    parser.add_argument('--lr', default=0.0002, type=float)
+    parser.add_argument('--betas', nargs='+', default=[0.5, 0.999], type=float)
     parser.add_argument('--resolution', default=28, type=int)
     parser.add_argument('--ckpt-path', type=str)
-    parser.add_argument('--dataset', default='data', type=str)
+    parser.add_argument('--dataset', default='../data', type=str)
     parser.add_argument('--alias', type=str, default=None)
     parser.add_argument("--clip-grad-norm", default=5.0, type=float,
                         help="the maximum gradient norm (default None)")

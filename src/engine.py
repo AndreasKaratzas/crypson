@@ -2,7 +2,7 @@
 import torch
 import torchvision
 
-from pytorch_lightning import LightningModule
+from lightning.pytorch import LightningModule
 from torch.optim import Adam
 from torch.autograd import Variable
 
@@ -16,22 +16,30 @@ class Engine(LightningModule):
         Generator model.
     discriminator : torch.nn.Module
         Discriminator model.
+    num_classes : int
+        Number of classes for conditional discrimination.
     z_dim : int, optional
         Dimension of the noise vector.
     lr : float, optional
         Learning rate for the optimizer.
     betas : tuple, optional
         Coefficients for computing running averages of gradient and its square.
+    clip_grad_norm : float, optional
+        Value for gradient clipping.
     """
     
-    def __init__(self, generator, discriminator, num_classes, z_dim=100, lr=0.0002, betas=(0.5, 0.999)):
+    def __init__(self, generator, discriminator, num_classes, 
+                 z_dim=100, lr=0.0002, betas=(0.5, 0.999),
+                 clip_grad_norm=5.0, en_cv=False):
         super().__init__()
         self.save_hyperparameters(ignore=['generator', 'discriminator'])
         self.generator = generator
         self.discriminator = discriminator
+        self.en_cv = en_cv
         self.z_dim = z_dim
         self.lr = lr
         self.betas = betas
+        self.clip_grad_norm = clip_grad_norm
         self.num_classes = num_classes
         self.automatic_optimization = False
         self.validation_z = torch.randn(8, self.z_dim, device=self.device)
@@ -42,11 +50,11 @@ class Engine(LightningModule):
     
     def training_step(self, batch, batch_idx):
         real_images, labels = batch
-        real_images = real_images.squeeze(1)
+        real_images = real_images.squeeze(1) if not self.en_cv else real_images
         optimizer_g, optimizer_d = self.optimizers()
 
         # Sample noise
-        z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
+        z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
         # Generate fake labels
         fake_labels = Variable(torch.randint(0, self.num_classes, (real_images.size(0),))).to(self.device)
         # Generate fake images
@@ -56,9 +64,10 @@ class Engine(LightningModule):
         # Generator training
         fake_pred = self.discriminator(fake_images, fake_labels)
         g_loss = self.criterion(fake_pred, Variable(torch.ones_like(fake_pred)).to(self.device))
-        self.log('g_loss', g_loss)
         # Backward pass
         self.manual_backward(g_loss)
+        self.clip_gradients(optimizer_g, gradient_clip_val=self.clip_grad_norm,
+                            gradient_clip_algorithm="norm")
         optimizer_g.step()
         optimizer_g.zero_grad()
         self.untoggle_optimizer(optimizer_g)
@@ -73,16 +82,20 @@ class Engine(LightningModule):
         fake_pred = self.discriminator(fake_images, fake_labels)
         fake_loss = self.criterion(fake_pred, Variable(torch.zeros_like(fake_pred)).to(self.device))
         d_loss = (real_loss + fake_loss) / 2
-        self.log('d_loss', d_loss)
         # Backward pass
         self.manual_backward(d_loss)
+        self.clip_gradients(optimizer_d, gradient_clip_val=self.clip_grad_norm,
+                            gradient_clip_algorithm="norm")
         optimizer_d.step()
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
+        # Log the losses
+        self.log_dict({'g_loss': g_loss, 'd_loss': d_loss}, 
+                      on_step=True, on_epoch=False)
 
     def validation_step(self, batch, batch_idx):
         real_images, labels = batch
-        real_images = real_images.squeeze(1)
+        real_images = real_images.squeeze(1) if not self.en_cv else real_images
         
         # Generating fake images
         z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
@@ -98,7 +111,7 @@ class Engine(LightningModule):
         d_loss = (real_loss + fake_loss) / 2
         
         # Log the validation loss
-        self.log('val_d_loss', d_loss)
+        self.log_dict({'val_loss': d_loss}, on_step=False, on_epoch=True)
     
     def configure_optimizers(self):
         opt_d = Adam(self.discriminator.parameters(),
@@ -111,7 +124,7 @@ class Engine(LightningModule):
         sample_images = self(self.validation_z.to(
             self.device), torch.randint(0, 10, (8,)).to(self.device))
         # Unsqueeze the images to 3D
-        sample_images = sample_images.unsqueeze(1)
+        sample_images = sample_images.unsqueeze(1) if not self.en_cv else sample_images
         grid = torchvision.utils.make_grid(sample_images)
         self.logger.experiment.add_image(
             "generated_images", grid, self.current_epoch)
