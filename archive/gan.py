@@ -93,6 +93,7 @@ class Discriminator(nn.Module):
             nn.Dropout(0.4),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 1),
+            nn.Sigmoid()
         )
 
     def forward(self, img, labels):
@@ -104,7 +105,7 @@ class Discriminator(nn.Module):
 
 
 # Loss functions
-adversarial_loss = torch.nn.MSELoss()
+adversarial_loss = torch.nn.BCELoss()
 
 # Initialize generator and discriminator
 generator = Generator()
@@ -216,11 +217,10 @@ for epoch in range(opt.n_epochs):
         d_loss.backward()
         optimizer_D.step()
 
-        print(
-            "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-            % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-        )
-
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
+            print(
+                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+            )
             sample_image(n_row=10, batches_done=batches_done)
