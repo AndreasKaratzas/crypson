@@ -98,7 +98,8 @@ def main(args):
 
     # early stopping
     # https://pytorch-lightning.readthedocs.io/en/latest/common/early_stopping.html
-    cbEarlyStopping = pl.callbacks.early_stopping.EarlyStopping(monitor='train_loss', patience=args.es_patience)
+    cbEarlyStopping = pl.callbacks.early_stopping.EarlyStopping(
+        monitor='g_loss', patience=args.es_patience)
     l_callbacks.append(cbEarlyStopping)
 
     # model checkpoint
