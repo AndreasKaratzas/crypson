@@ -125,12 +125,12 @@ class ConvGenerator(nn.Module):
     def __init__(self, z_dim, img_shape, n_classes):
         super(ConvGenerator, self).__init__()
         self.img_shape = img_shape
-        self.label_emb = nn.Embedding(n_classes, n_classes)
+        self.label_emb = nn.Embedding(n_classes, np.prod(img_shape))
 
         # Initial size before upscaling
         self.init_size = self.img_shape[1] // 4
         self.l1 = nn.Sequential(
-            nn.Linear(z_dim + n_classes, 128 * self.init_size ** 2))
+            nn.Linear(z_dim + np.prod(img_shape), 128 * self.init_size ** 2))
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),

@@ -45,7 +45,14 @@ class Engine(LightningModule):
         self.clip_grad_norm = clip_grad_norm
         self.num_classes = num_classes
         self.automatic_optimization = False
-        self.validation_z = torch.randn(8, self.z_dim, device=self.device)
+        if self.en_cv:
+            self.validation_z = torch.randn(
+                (8, 1, self.resolution, self.resolution), device=self.device)
+        elif self.en_unet:
+            self.validation_z = torch.randn(
+                (8, 1, self.resolution, self.resolution), device=self.device)
+        else:
+            self.validation_z = torch.randn(8, self.z_dim, device=self.device)
         self.criterion = torch.nn.BCELoss()
 
     def forward(self, z, labels):
@@ -59,6 +66,9 @@ class Engine(LightningModule):
 
         # Sample noise
         if self.en_unet:
+            z = torch.randn(
+                (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
+        elif self.en_cv:
             z = torch.randn(
                 (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
         else:
@@ -111,9 +121,11 @@ class Engine(LightningModule):
         if self.en_unet:
             z = torch.randn(
                 (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
+        elif self.en_cv:
+            z = torch.randn(
+                (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
         else:
             z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
-        print(z.shape, labels.shape)
 
         fake_images = self(z, labels)
 
@@ -138,7 +150,7 @@ class Engine(LightningModule):
     def on_validation_epoch_end(self):
         # Log sampled images
         sample_images = self(self.validation_z.to(
-            self.device), torch.randint(0, 10, (8,)).to(self.device))
+            self.device), torch.randint(0, self.num_classes, (8,)).to(self.device))
         # Unsqueeze the images to 3D
         sample_images = sample_images.unsqueeze(1) if not (
             self.en_cv or self.en_unet) else sample_images
