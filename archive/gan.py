@@ -44,7 +44,7 @@ print(opt)
 
 img_shape = (opt.channels, opt.img_size, opt.img_size)
 
-cuda = True if torch.cuda.is_available() else False
+
 
 
 class Generator(nn.Module):
@@ -111,10 +111,12 @@ adversarial_loss = torch.nn.BCELoss()
 generator = Generator()
 discriminator = Discriminator()
 
-if cuda:
-    generator.cuda()
-    discriminator.cuda()
-    adversarial_loss.cuda()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Move model to GPU
+generator.to(device)
+discriminator.to(device)
+adversarial_loss.to(device)
 
 # Configure data loader
 os.makedirs("../../data/mnist", exist_ok=True)
@@ -139,15 +141,11 @@ optimizer_G = torch.optim.Adam(
 optimizer_D = torch.optim.Adam(
     discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
-FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
-
-
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
-    z = Variable(FloatTensor(np.random.normal(
-        0, 1, (n_row ** 2, opt.latent_dim))))
+    z = Variable(torch.tensor(np.random.normal(
+        0, 1, (n_row ** 2, opt.latent_dim)), dtype=torch.float32))
     # Get labels ranging from 0 to n_classes for n rows
     labels = np.array([num for _ in range(n_row) for num in range(n_row)])
     labels = Variable(torch.tensor(labels, dtype=torch.int64))
@@ -157,7 +155,6 @@ def sample_image(n_row, batches_done):
 
 g_loss_list = []
 d_loss_list = []
-
 
 # ----------
 #  Training
@@ -170,13 +167,13 @@ for epoch in range(opt.n_epochs):
 
         # Adversarial ground truths
         valid = Variable(torch.tensor(batch_size, 1, dtype=torch.float32).fill_(
-            1.0), requires_grad=False)
+            1.0), requires_grad=False).to(device)
         fake = Variable(torch.tensor(batch_size, 1, dtype=torch.float32).fill_(0.0),
-                        requires_grad=False)
+                        requires_grad=False).to(device)
 
         # Configure input
-        real_imgs = Variable(imgs.type(FloatTensor))
-        labels = Variable(labels.type(LongTensor))
+        real_imgs = Variable(imgs.type(torch.float32)).to(device)
+        labels = Variable(labels.type(torch.int64)).to(device)
 
         # -----------------
         #  Train Generator
@@ -186,9 +183,9 @@ for epoch in range(opt.n_epochs):
 
         # Sample noise and labels as generator input
         z = Variable(torch.tensor(np.random.normal(
-            0, 1, (batch_size, opt.latent_dim)), dtype=torch.float32))
+            0, 1, (batch_size, opt.latent_dim)), dtype=torch.float32)).to(device)
         gen_labels = Variable(torch.tensor(
-            np.random.randint(0, opt.n_classes, batch_size), dtype=torch.int64))
+            np.random.randint(0, opt.n_classes, batch_size), dtype=torch.int64)).to(device)
 
         # Generate a batch of images
         gen_imgs = generator(z, gen_labels)
