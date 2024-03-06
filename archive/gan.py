@@ -142,7 +142,7 @@ def sample_image(n_row, n_classes, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
     z = Variable(torch.tensor(np.random.normal(
-        0, 1, (n_row ** 2, opt.latent_dim)), dtype=torch.float32)).to(device)
+        0, 1, (n_row * n_classes, opt.latent_dim)), dtype=torch.float32)).to(device)
     # Get labels ranging from 0 to n_classes for n rows
     labels = np.array([num for _ in range(n_row) for num in range(n_classes)])
     labels = Variable(torch.tensor(labels, dtype=torch.int64)).to(device)
