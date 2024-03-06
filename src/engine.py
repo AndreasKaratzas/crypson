@@ -68,7 +68,6 @@ class Engine(LightningModule):
         fake_labels = Variable(torch.randint(0, self.num_classes, (real_images.size(0),))).to(self.device)
         # Generate fake images
         self.toggle_optimizer(optimizer_g)
-        print(z.shape, fake_labels.shape)
         fake_images = self(z, fake_labels)
         
         # Generator training
@@ -114,6 +113,8 @@ class Engine(LightningModule):
                 (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
         else:
             z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
+        print(z.shape, labels.shape)
+
         fake_images = self(z, labels)
 
         # Discriminator predictions
