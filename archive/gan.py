@@ -150,10 +150,13 @@ def sample_image(n_row, batches_done):
         0, 1, (n_row ** 2, opt.latent_dim))))
     # Get labels ranging from 0 to n_classes for n rows
     labels = np.array([num for _ in range(n_row) for num in range(n_row)])
-    labels = Variable(LongTensor(labels))
+    labels = Variable(torch.tensor(labels, dtype=torch.int64))
     gen_imgs = generator(z, labels)
     save_image(gen_imgs.data, "images/%d.png" %
                batches_done, nrow=n_row, normalize=True)
+
+g_loss_list = []
+d_loss_list = []
 
 
 # ----------
@@ -166,9 +169,9 @@ for epoch in range(opt.n_epochs):
         batch_size = imgs.shape[0]
 
         # Adversarial ground truths
-        valid = Variable(FloatTensor(batch_size, 1).fill_(
+        valid = Variable(torch.tensor(batch_size, 1, dtype=torch.float32).fill_(
             1.0), requires_grad=False)
-        fake = Variable(FloatTensor(batch_size, 1).fill_(0.0),
+        fake = Variable(torch.tensor(batch_size, 1, dtype=torch.float32).fill_(0.0),
                         requires_grad=False)
 
         # Configure input
@@ -182,10 +185,10 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise and labels as generator input
-        z = Variable(FloatTensor(np.random.normal(
-            0, 1, (batch_size, opt.latent_dim))))
-        gen_labels = Variable(LongTensor(
-            np.random.randint(0, opt.n_classes, batch_size)))
+        z = Variable(torch.tensor(np.random.normal(
+            0, 1, (batch_size, opt.latent_dim)), dtype=torch.float32))
+        gen_labels = Variable(torch.tensor(
+            np.random.randint(0, opt.n_classes, batch_size), dtype=torch.int64))
 
         # Generate a batch of images
         gen_imgs = generator(z, gen_labels)
@@ -217,10 +220,15 @@ for epoch in range(opt.n_epochs):
         d_loss.backward()
         optimizer_D.step()
 
+        g_loss_list.append(g_loss.item())
+        d_loss_list.append(d_loss.item())
+
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
             print(
                 "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+                % (epoch, opt.n_epochs, i, len(dataloader), np.mean(d_loss_list), np.mean(g_loss_list))
             )
             sample_image(n_row=10, batches_done=batches_done)
+            g_loss_list = []
+            d_loss_list = []
