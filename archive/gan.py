@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-os.makedirs("images", exist_ok=True)
+os.makedirs("../data/images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n-epochs", type=int, default=200,
@@ -43,9 +43,6 @@ opt = parser.parse_args()
 print(opt)
 
 img_shape = (opt.channels, opt.img_size, opt.img_size)
-
-
-
 
 class Generator(nn.Module):
     def __init__(self):
@@ -119,10 +116,10 @@ discriminator.to(device)
 adversarial_loss.to(device)
 
 # Configure data loader
-os.makedirs("../../data/mnist", exist_ok=True)
+os.makedirs("../data", exist_ok=True)
 dataloader = torch.utils.data.DataLoader(
     datasets.EMNIST(
-        "../data/emnist",
+        "../data",
         train=True,
         split='balanced',
         download=True,
@@ -141,16 +138,16 @@ optimizer_G = torch.optim.Adam(
 optimizer_D = torch.optim.Adam(
     discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
 
-def sample_image(n_row, batches_done):
+def sample_image(n_row, n_classes, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
     z = Variable(torch.tensor(np.random.normal(
         0, 1, (n_row ** 2, opt.latent_dim)), dtype=torch.float32)).to(device)
     # Get labels ranging from 0 to n_classes for n rows
-    labels = np.array([num for _ in range(n_row) for num in range(n_row)])
+    labels = np.array([num for _ in range(n_row) for num in range(n_classes)])
     labels = Variable(torch.tensor(labels, dtype=torch.int64)).to(device)
     gen_imgs = generator(z, labels)
-    save_image(gen_imgs.data, "images/%d.png" %
+    save_image(gen_imgs.data, "../data/images/%d.png" %
                batches_done, nrow=n_row, normalize=True)
 
 g_loss_list = []
@@ -166,9 +163,9 @@ for epoch in range(opt.n_epochs):
         batch_size = imgs.shape[0]
 
         # Adversarial ground truths
-        valid = Variable(torch.tensor((batch_size, 1), dtype=torch.float32).fill_(
+        valid = Variable(torch.zeros([batch_size, 1], dtype=torch.float32).fill_(
             1.0), requires_grad=False).to(device)
-        fake = Variable(torch.tensor((batch_size, 1), dtype=torch.float32).fill_(
+        fake = Variable(torch.zeros([batch_size, 1], dtype=torch.float32).fill_(
             0.0), requires_grad=False).to(device)
 
         # Configure input
@@ -226,6 +223,7 @@ for epoch in range(opt.n_epochs):
                 "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
                 % (epoch, opt.n_epochs, i, len(dataloader), np.mean(d_loss_list), np.mean(g_loss_list))
             )
-            sample_image(n_row=10, batches_done=batches_done)
+            sample_image(n_row=10, n_classes=opt.n_classes,
+                         batches_done=batches_done)
             g_loss_list = []
             d_loss_list = []
