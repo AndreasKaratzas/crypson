@@ -158,7 +158,7 @@ if __name__ == '__main__':
     # program level args
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--output', default='train', type=str)
-    parser.add_argument('--experiment', default='DCVae', type=str)
+    parser.add_argument('--experiment', default='DCGan', type=str)
     parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
     parser.add_argument('--num-epochs', default=20, type=int)

@@ -89,7 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=33, type=int)
     parser.add_argument('--cache', action="store_true")
     parser.add_argument('--output', default='train', type=str)
-    parser.add_argument('--experiment', default='VQVae', type=str)
+    parser.add_argument('--experiment', default='DCGan', type=str)
     # NOTE: Batch size is advised to be 1 for evaluation.
     #       That way we can also plot the results.
     parser.add_argument('--batch-size', default=1, type=int)
