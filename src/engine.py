@@ -30,12 +30,14 @@ class Engine(LightningModule):
     
     def __init__(self, generator, discriminator, num_classes, 
                  z_dim=100, lr=0.0002, betas=(0.5, 0.999),
-                 clip_grad_norm=5.0, en_cv=False):
+                 clip_grad_norm=5.0, en_cv=False,
+                 en_unet=False):
         super().__init__()
         self.save_hyperparameters(ignore=['generator', 'discriminator'])
         self.generator = generator
         self.discriminator = discriminator
         self.en_cv = en_cv
+        self.en_unet = en_unet
         self.z_dim = z_dim
         self.lr = lr
         self.betas = betas
@@ -50,11 +52,16 @@ class Engine(LightningModule):
     
     def training_step(self, batch, batch_idx):
         real_images, labels = batch
-        real_images = real_images.squeeze(1) if not self.en_cv else real_images
+        real_images = real_images.squeeze(1) if not (
+            self.en_cv or self.en_unet) else real_images
         optimizer_g, optimizer_d = self.optimizers()
 
         # Sample noise
-        z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
+        if self.en_unet:
+            z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
+        else:
+            z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
+
         # Generate fake labels
         fake_labels = Variable(torch.randint(0, self.num_classes, (real_images.size(0),))).to(self.device)
         # Generate fake images
@@ -95,10 +102,14 @@ class Engine(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         real_images, labels = batch
-        real_images = real_images.squeeze(1) if not self.en_cv else real_images
+        real_images = real_images.squeeze(1) if not (
+            self.en_cv or self.en_unet) else real_images
         
         # Generating fake images
-        z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
+        if self.en_unet:
+            z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
+        else:
+            z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
         fake_images = self(z, labels)
 
         # Discriminator predictions
@@ -124,7 +135,8 @@ class Engine(LightningModule):
         sample_images = self(self.validation_z.to(
             self.device), torch.randint(0, 10, (8,)).to(self.device))
         # Unsqueeze the images to 3D
-        sample_images = sample_images.unsqueeze(1) if not self.en_cv else sample_images
+        sample_images = sample_images.unsqueeze(1) if not (
+            self.en_cv or self.en_unet) else sample_images
         grid = torchvision.utils.make_grid(sample_images)
         self.logger.experiment.add_image(
             "generated_images", grid, self.current_epoch)

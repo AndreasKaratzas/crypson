@@ -41,7 +41,7 @@ if __name__ == "__main__":
     gan_model = Engine(generator=generator, discriminator=discriminator, 
                        num_classes=62, z_dim=100 if not args.en_unet else 8, 
                        lr=0.0002, betas=(0.5, 0.999), clip_grad_norm=5.0, 
-                       en_cv=args.en_cv or args.en_unet)
+                       en_cv=args.en_cv, en_unet=args.en_unet)
 
     # Initialize a trainer
     trainer = Trainer(max_epochs=10, accelerator='gpu', enable_model_summary=True, 

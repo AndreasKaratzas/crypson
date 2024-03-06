@@ -86,7 +86,8 @@ def main(args):
             img_shape=(args.resolution, args.resolution), n_classes=62)
     lm = Engine(generator=generator, discriminator=discriminator, 
                 num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
-                clip_grad_norm=args.clip_grad_norm, en_cv=args.en_cv or args.en_unet)
+                clip_grad_norm=args.clip_grad_norm, en_cv=args.en_cv, 
+                en_unet=args.en_unet)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
