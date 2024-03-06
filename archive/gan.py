@@ -17,9 +17,9 @@ import torch
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200,
+parser.add_argument("--n-epochs", type=int, default=200,
                     help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=64,
+parser.add_argument("--batch-size", type=int, default=64,
                     help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002,
                     help="adam: learning rate")
@@ -29,7 +29,7 @@ parser.add_argument("--b2", type=float, default=0.999,
                     help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n-cpu", type=int, default=8,
                     help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100,
+parser.add_argument("--latent-dim", type=int, default=100,
                     help="dimensionality of the latent space")
 parser.add_argument("--n-classes", type=int, default=62,
                     help="number of classes for dataset")
@@ -121,6 +121,7 @@ dataloader = torch.utils.data.DataLoader(
     datasets.EMNIST(
         "../data/emnist",
         train=True,
+        split='balanced',
         download=True,
         transform=transforms.Compose(
             [transforms.Resize(opt.img_size), transforms.ToTensor(),
