@@ -31,13 +31,14 @@ class Engine(LightningModule):
     def __init__(self, generator, discriminator, num_classes, 
                  z_dim=100, lr=0.0002, betas=(0.5, 0.999),
                  clip_grad_norm=5.0, en_cv=False,
-                 en_unet=False):
+                 en_unet=False, resolution=28):
         super().__init__()
         self.save_hyperparameters(ignore=['generator', 'discriminator'])
         self.generator = generator
         self.discriminator = discriminator
         self.en_cv = en_cv
         self.en_unet = en_unet
+        self.resolution = resolution
         self.z_dim = z_dim
         self.lr = lr
         self.betas = betas
@@ -58,7 +59,8 @@ class Engine(LightningModule):
 
         # Sample noise
         if self.en_unet:
-            z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
+            z = torch.randn(
+                (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
         else:
             z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
 
@@ -66,6 +68,7 @@ class Engine(LightningModule):
         fake_labels = Variable(torch.randint(0, self.num_classes, (real_images.size(0),))).to(self.device)
         # Generate fake images
         self.toggle_optimizer(optimizer_g)
+        print(z.shape, fake_labels.shape)
         fake_images = self(z, fake_labels)
         
         # Generator training
@@ -107,7 +110,8 @@ class Engine(LightningModule):
         
         # Generating fake images
         if self.en_unet:
-            z = torch.randn((real_images.size(0), 1, 28, 28), device=self.device)
+            z = torch.randn(
+                (real_images.size(0), 1, self.resolution, self.resolution), device=self.device)
         else:
             z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
         fake_images = self(z, labels)

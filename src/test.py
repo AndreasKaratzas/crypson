@@ -44,12 +44,12 @@ def main(args):
             img_shape=(args.resolution, args.resolution), n_classes=62)
     lm = Engine(generator=generator, discriminator=discriminator, num_classes=62,
                 z_dim=args.z_dim, lr=args.lr, betas=args.betas, en_cv=args.en_cv, 
-                en_unet=args.en_unet)
+                en_unet=args.en_unet, resolution=args.resolution)
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
     checkpoint_dirpath = os.path.join(
-        args.output, 'dcvae')
+        args.output, 'DCGan')
     best_checkpoint = get_elite(os.listdir(checkpoint_dirpath))
     ckp = torch.load(os.path.join(checkpoint_dirpath,
                      best_checkpoint), map_location=device)

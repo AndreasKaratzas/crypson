@@ -87,7 +87,7 @@ def main(args):
     lm = Engine(generator=generator, discriminator=discriminator, 
                 num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
                 clip_grad_norm=args.clip_grad_norm, en_cv=args.en_cv, 
-                en_unet=args.en_unet)
+                en_unet=args.en_unet, resolution=args.resolution)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -103,7 +103,7 @@ def main(args):
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
-    checkpoint_dirpath = os.path.join(args.output, 'dcvae')
+    checkpoint_dirpath = os.path.join(args.output, 'DCGan')
     progress_bar = CustomProgressBar()
     l_callbacks.append(progress_bar)
 
@@ -124,10 +124,10 @@ def main(args):
 
     cbModelCheckpoint = pl.callbacks.ModelCheckpoint(
         save_top_k=5,
-        monitor="train_loss",
+        monitor="g_loss",
         mode="min",
         dirpath=checkpoint_dirpath,
-        filename="epoch_{epoch:05d}-loss_{train_loss:.5f}",
+        filename="epoch_{epoch:05d}-loss_{g_loss:.5f}",
         auto_insert_metric_name=False,
         
     )
