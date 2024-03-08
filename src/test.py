@@ -11,9 +11,7 @@ import lightning.pytorch as pl
 from argparse import ArgumentParser
 
 from src.modules import (
-    Generator, Discriminator,
-    ConvGenerator, ConvDiscriminator,
-    UNetGenerator, UNetDiscriminator)
+    Generator, Discriminator)
 from src.engine import Engine
 from src.dataset import EMNISTDataModule
 from src.registry import CustomProgressBar
@@ -27,24 +25,11 @@ def main(args):
 
     device = torch.device(
         f'cuda:{args.gpus[0]}' if torch.cuda.is_available() else 'cpu')
-    if args.en_cv:
-        generator = ConvGenerator(
-            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
-        discriminator = ConvDiscriminator(
-            img_shape=(1, args.resolution, args.resolution), n_classes=62)
-    elif args.en_unet:
-        generator = UNetGenerator(z_dim=args.z_dim, img_shape=(
-            1, args.resolution, args.resolution), n_classes=62)
-        discriminator = UNetDiscriminator(
-            z_dim=args.z_dim, img_shape=(1, args.resolution, args.resolution), n_classes=62)
-    else:
-        generator = Generator(z_dim=args.z_dim, img_shape=(
-            args.resolution, args.resolution), n_classes=62)
-        discriminator = Discriminator(
-            img_shape=(args.resolution, args.resolution), n_classes=62)
-    lm = Engine(generator=generator, discriminator=discriminator, num_classes=62,
-                z_dim=args.z_dim, lr=args.lr, betas=args.betas, en_cv=args.en_cv, 
-                en_unet=args.en_unet, resolution=args.resolution)
+    generator = Generator(args.z_dim, 62, args.resolution).to(device)
+    discriminator = Discriminator(62, args.resolution).to(device)
+    lm = Engine(generator=generator, discriminator=discriminator,
+                num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
+                clip_grad_norm=args.clip_grad_norm, lnp=None, wandb_logger=None)
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
@@ -67,15 +52,13 @@ def main(args):
                          callbacks=l_callbacks,
                          logger=False)
     
-    dm = EMNISTDataModule(
-        data_dir=args.dataset, num_workers=args.num_workers,
-        batch_size=args.batch_size, val_split=args.val_split,
-        image_size=args.resolution
-    )
+    dm = EMNISTDataModule(data_dir=args.dataset, num_workers=args.num_workers,
+                          batch_size=args.batch_size, val_split=args.val_split,
+                          image_size=args.resolution)
 
     if args.debug:
         # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#inference
-        trainer.test(lm, dm)
+        trainer.test(lm, datamodule=dm)
     else:
         return trainer, lm, dm, checkpoint_dirpath
 
@@ -98,8 +81,6 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='../data', type=str)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--val-split', default=0.15, type=float)
-    parser.add_argument('--en-cv', action="store_true")
-    parser.add_argument('--en-unet', action="store_true")
     parser.add_argument('--debug', action="store_true")
     parser.add_argument('--z-dim', default=100, type=int)
     parser.add_argument('--lr', default=2e-4, type=float)

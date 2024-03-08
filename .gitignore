@@ -9,6 +9,7 @@ __pycache__/
 # Data
 data/
 lightning_logs/
+train/
 
 # Distribution / packaging
 .Python
