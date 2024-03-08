@@ -9,17 +9,20 @@ class Generator(nn.Module):
         self.num_classes = num_classes
         self.img_size = img_size
         self.embedding = nn.Embedding(num_classes, latent_dim)
-        self.init_size = img_size // 4
-        self.fc = nn.Linear(latent_dim, 128 * self.init_size ** 2)
+        self.init_size = img_size // 8
+        self.fc = nn.Linear(latent_dim, 512 * self.init_size ** 2)
         self.res_blocks = nn.ModuleDict({
-            'res_block1': ResidualBlock(128, 128, num_classes),
-            'attention1': AttentionLayer(128),
-            'upsample1': nn.Upsample(scale_factor=2),
-            'res_block2': ResidualBlock(128, 64, num_classes),
-            'attention2': AttentionLayer(64),
-            'upsample2': nn.Upsample(scale_factor=2),
-            'res_block3': ResidualBlock(64, 64, num_classes),
-            'attention3': AttentionLayer(64),
+            'res_block1': ResidualBlock(512, 512, num_classes),
+            'attention1': AttentionLayer(512),
+            'upsample1': nn.ConvTranspose2d(512, 256, 4, stride=2, padding=1),
+            'res_block2': ResidualBlock(256, 256, num_classes),
+            'attention2': AttentionLayer(256),
+            'upsample2': nn.ConvTranspose2d(256, 128, 4, stride=2, padding=1),
+            'res_block3': ResidualBlock(128, 128, num_classes),
+            'attention3': AttentionLayer(128),
+            'upsample3': nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
+            'res_block4': ResidualBlock(64, 64, num_classes),
+            'attention4': AttentionLayer(64),
             'conv': nn.Conv2d(64, 1, 3, padding=1),
             'tanh': nn.Tanh()
         })
@@ -28,7 +31,7 @@ class Generator(nn.Module):
         embedding = self.embedding(labels)
         z = torch.mul(z, embedding)
         z = self.fc(z)
-        z = z.view(z.size(0), 128, self.init_size, self.init_size)
+        z = z.view(z.size(0), 512, self.init_size, self.init_size)
 
         for name, module in self.res_blocks.items():
             if isinstance(module, ResidualBlock):
@@ -48,11 +51,15 @@ class Discriminator(nn.Module):
         self.model = nn.ModuleDict({
             'conv1': nn.utils.spectral_norm(nn.Conv2d(2, 64, 4, stride=2, padding=1)),
             'leaky_relu1': nn.LeakyReLU(0.2),
-            'attention': AttentionLayer(64),
             'conv2': nn.utils.spectral_norm(nn.Conv2d(64, 128, 4, stride=2, padding=1)),
             'leaky_relu2': nn.LeakyReLU(0.2),
-            'res_block': ResidualBlock(128, 128, num_classes),
-            'conv3': nn.utils.spectral_norm(nn.Conv2d(128, 1, 4, stride=1, padding=0)),
+            'attention1': AttentionLayer(128),
+            'res_block1': ResidualBlock(128, 128, num_classes),
+            'conv3': nn.utils.spectral_norm(nn.Conv2d(128, 256, 4, stride=2, padding=1)),
+            'leaky_relu3': nn.LeakyReLU(0.2),
+            'attention2': AttentionLayer(256),
+            'res_block2': ResidualBlock(256, 256, num_classes),
+            'conv4': nn.utils.spectral_norm(nn.Conv2d(256, 1, 4, stride=1, padding=0)),
             'sigmoid': nn.Sigmoid()
         })
 
