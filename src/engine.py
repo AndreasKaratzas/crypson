@@ -79,32 +79,40 @@ class Engine(LightningModule):
             Batch index.
         """
         real_images, labels = batch
+        real_images = real_images.view(real_images.size(0), -1)
+        real_images = torch.squeeze(real_images)
         z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
         opt_d, opt_g = self.optimizers()
 
         # Discriminator training
-        opt_d.zero_grad()
         fake_labels = torch.randint(0, self.num_classes, (real_images.size(0),)).to(self.device)
+        self.toggle_optimizer(opt_d)
         fake_images = self(z, fake_labels)
         real_pred = self.discriminator(real_images, labels)
         real_loss = self.criterion(real_pred, torch.ones_like(real_pred))
         fake_pred = self.discriminator(fake_images.detach(), fake_labels)
         fake_loss = self.criterion(fake_pred, torch.zeros_like(fake_pred))
         d_loss = (real_loss + fake_loss) / 2
+        # Update the discriminator
+        opt_d.zero_grad()
         self.manual_backward(d_loss)
         self.clip_gradients(opt_d, gradient_clip_val=self.clip_grad_norm, gradient_clip_algorithm="norm")
         opt_d.step()
+        self.untoggle_optimizer(opt_d)
         self.log('d_loss', d_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # Generator training
-        opt_g.zero_grad()
         fake_labels = torch.randint(0, self.num_classes, (real_images.size(0),)).to(self.device)
+        self.toggle_optimizer(opt_g)
         fake_images = self(z, fake_labels)
         fake_pred = self.discriminator(fake_images, fake_labels)
         g_loss = self.criterion(fake_pred, torch.ones_like(fake_pred))
+        # Update the generator
+        opt_g.zero_grad()
         self.manual_backward(g_loss)
         self.clip_gradients(opt_g, gradient_clip_val=self.clip_grad_norm, gradient_clip_algorithm="norm")
         opt_g.step()
+        self.untoggle_optimizer(opt_g)
         self.log('g_loss', g_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # Store the step losses in custom lists
@@ -140,6 +148,8 @@ class Engine(LightningModule):
             Batch index.
         """
         real_images, labels = batch
+        real_images = real_images.view(real_images.size(0), -1)
+        real_images = torch.squeeze(real_images)
 
         # Generating fake images
         z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
@@ -190,8 +200,7 @@ class Engine(LightningModule):
         image_path = os.path.join(image_dir, f"generated_images_epoch_{self.current_epoch}.png")
         sample_images = self(self.validation_z.to(
             self.device), torch.randint(0, self.num_classes, (20,)).to(self.device))
-        sample_images = (sample_images + 1) / 2
-        grid = torchvision.utils.make_grid(sample_images)        
+        grid = torchvision.utils.make_grid(sample_images.view(-1, 1, 28, 28))     
         
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
