@@ -97,7 +97,6 @@ class Engine(LightningModule):
         # Update the discriminator
         opt_d.zero_grad()
         self.manual_backward(d_loss)
-        self.clip_gradients(opt_d, gradient_clip_val=self.clip_grad_norm, gradient_clip_algorithm="norm")
         opt_d.step()
         self.untoggle_optimizer(opt_d)
         self.log('d_loss', d_loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -111,7 +110,6 @@ class Engine(LightningModule):
         # Update the generator
         opt_g.zero_grad()
         self.manual_backward(g_loss)
-        self.clip_gradients(opt_g, gradient_clip_val=self.clip_grad_norm, gradient_clip_algorithm="norm")
         opt_g.step()
         self.untoggle_optimizer(opt_g)
         self.log('g_loss', g_loss, on_step=False, on_epoch=True, prog_bar=True)
