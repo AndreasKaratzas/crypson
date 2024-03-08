@@ -203,7 +203,8 @@ class Engine(LightningModule):
             self.device), torch.randint(0, self.num_classes, (20,)).to(self.device))
         img_dim = np.prod(sample_images.shape) // 20 
         img_dim = int(np.sqrt(img_dim))
-        grid = torchvision.utils.make_grid(sample_images.view(20, 1,))     
+        grid = torchvision.utils.make_grid(
+            sample_images.view(20, 1, img_dim, img_dim))
         
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
