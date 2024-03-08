@@ -2,6 +2,7 @@
 import os
 import torch
 import wandb
+import numpy as np
 import torchvision
 
 from lightning.pytorch import LightningModule
@@ -200,7 +201,9 @@ class Engine(LightningModule):
         image_path = os.path.join(image_dir, f"generated_images_epoch_{self.current_epoch}.png")
         sample_images = self(self.validation_z.to(
             self.device), torch.randint(0, self.num_classes, (20,)).to(self.device))
-        grid = torchvision.utils.make_grid(sample_images.view(-1, 1, 28, 28))     
+        img_dim = np.prod(sample_images.shape) // 20 
+        img_dim = int(np.sqrt(img_dim))
+        grid = torchvision.utils.make_grid(sample_images.view(20, 1,))     
         
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
