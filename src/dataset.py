@@ -32,8 +32,10 @@ class EMNISTDataModule(LightningDataModule):
         self.num_workers = num_workers
         self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
+            transforms.RandomRotation(degrees=10),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))  # Normalize to [-1, 1]
+            transforms.Normalize(mean=(0.5,), std=(0.5,))
         ])
 
     def prepare_data(self):

@@ -13,10 +13,13 @@ class Generator(nn.Module):
         self.fc = nn.Linear(latent_dim, 128 * self.init_size ** 2)
         self.res_blocks = nn.ModuleDict({
             'res_block1': ResidualBlock(128, 128, num_classes),
+            'attention1': AttentionLayer(128),
             'upsample1': nn.Upsample(scale_factor=2),
             'res_block2': ResidualBlock(128, 64, num_classes),
-            'attention': AttentionLayer(64),
+            'attention2': AttentionLayer(64),
             'upsample2': nn.Upsample(scale_factor=2),
+            'res_block3': ResidualBlock(64, 64, num_classes),
+            'attention3': AttentionLayer(64),
             'conv': nn.Conv2d(64, 1, 3, padding=1),
             'tanh': nn.Tanh()
         })

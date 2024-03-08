@@ -188,10 +188,10 @@ class Engine(LightningModule):
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
         image_path = os.path.join(image_dir, f"generated_images_epoch_{self.current_epoch}.png")
-        
         sample_images = self(self.validation_z.to(
             self.device), torch.randint(0, self.num_classes, (20,)).to(self.device))
-        grid = torchvision.utils.make_grid(sample_images)
+        sample_images = (sample_images + 1) / 2
+        grid = torchvision.utils.make_grid(sample_images)        
         
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
