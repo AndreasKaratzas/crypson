@@ -10,23 +10,51 @@ class Generator(nn.Module):
         self.num_classes = num_classes
         self.img_size = img_size
         self.embedding = nn.Embedding(num_classes, latent_dim)
-        self.model = nn.Sequential(
-            nn.Linear(latent_dim, 512),
-            nn.ReLU(inplace=True),
-            nn.Linear(512, 1024),
-            nn.ReLU(inplace=True),
-            nn.Linear(1024, 1024),
-            nn.ReLU(inplace=True),
-            nn.Linear(1024, img_size * img_size),
+
+        self.fc = nn.Linear(latent_dim, 1024)
+        self.bn_fc = nn.BatchNorm1d(1024)
+
+        self.res_block1 = ResidualBlock(1024, 1024)
+        self.res_block2 = ResidualBlock(1024, 512)
+        self.res_block3 = ResidualBlock(512, 256)
+
+        self.final_layer = nn.Sequential(
+            nn.Linear(256, img_size * img_size),
             nn.Tanh()
         )
 
     def forward(self, z, labels):
         embedding = self.embedding(labels)
         z = torch.mul(z, embedding)
-        img = self.model(z)
+        x = self.fc(z)
+        x = self.bn_fc(x)
+        x = nn.LeakyReLU(0.2)(x)
+        x = self.res_block1(x)
+        x = self.res_block2(x)
+        x = self.res_block3(x)
+        img = self.final_layer(x)
         img = img.view(img.size(0), self.img_size * self.img_size)
         return img
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResidualBlock, self).__init__()
+        self.fc1 = nn.Linear(in_channels, out_channels)
+        self.bn1 = nn.BatchNorm1d(out_channels)
+        self.fc2 = nn.Linear(out_channels, out_channels)
+        self.bn2 = nn.BatchNorm1d(out_channels)
+
+    def forward(self, x):
+        residual = x
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = nn.LeakyReLU(0.2)(x)
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x += residual
+        x = nn.LeakyReLU(0.2)(x)
+        return x
 
 
 class Discriminator(nn.Module):
