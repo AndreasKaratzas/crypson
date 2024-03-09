@@ -15,8 +15,8 @@ class Generator(nn.Module):
         self.bn_fc = nn.BatchNorm1d(1024)
 
         self.res_block1 = ResidualBlock(1024, 1024)
-        self.res_block2 = ResidualBlock(1024, 512)
-        self.res_block3 = ResidualBlock(512, 256)
+        self.res_block2 = ResidualBlockWShortcut(1024, 512)
+        self.res_block3 = ResidualBlockWShortcut(512, 256)
 
         self.final_layer = nn.Sequential(
             nn.Linear(256, img_size * img_size),
