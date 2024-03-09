@@ -3,6 +3,9 @@ import os
 import time
 import hashlib
 
+from rich import print as rprint
+from rich.syntax import Syntax
+
 
 class Logger:
     def __init__(self, tb_logger, wandb_logger, run_name, project_dir):
@@ -19,6 +22,13 @@ class Logger:
         hash_input = f"{timestamp}_{run_name}"
         hash_object = hashlib.sha256(hash_input.encode())
         hash_hex = hash_object.hexdigest()[:8]
+
+        message = f"""
+        Logging at:
+            >>> {project_dir}/log/experiment-{hash_hex}.log
+        """
+        syntax = Syntax(message, "python", theme="monokai", line_numbers=False)
+        rprint(syntax)
 
         # Create the logs directory if it doesn't exist
         logs_dir = os.path.join(project_dir, 'log')

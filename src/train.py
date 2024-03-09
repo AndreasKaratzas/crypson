@@ -78,7 +78,7 @@ def main(args):
     discriminator = Discriminator(62, args.resolution)
     lm = Engine(generator=generator, discriminator=discriminator, 
                 num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
-                clip_grad_norm=args.clip_grad_norm, lnp=lnp, wandb_logger=wandb_logger)
+                lnp=lnp, wandb_logger=wandb_logger)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -166,8 +166,6 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt-path', type=str)
     parser.add_argument('--dataset', default='../data', type=str)
     parser.add_argument('--alias', type=str, default=None)
-    parser.add_argument("--clip-grad-norm", default=5.0, type=float,
-                        help="the maximum gradient norm (default None)")
 
     # trainer level args
     args = parser.parse_args()

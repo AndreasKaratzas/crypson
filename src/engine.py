@@ -37,7 +37,7 @@ class Engine(LightningModule):
 
     def __init__(self, generator, discriminator, num_classes,
                  z_dim=100, lr=0.0002, betas=(0.5, 0.999),
-                 clip_grad_norm=5.0, lnp=None, wandb_logger=None):
+                 lnp=None, wandb_logger=None):
         super().__init__()
         self.save_hyperparameters(ignore=['generator', 'discriminator', 'lnp', 'wandb_logger'])
         self.generator = generator
@@ -45,7 +45,6 @@ class Engine(LightningModule):
         self.z_dim = z_dim
         self.lr = lr
         self.betas = betas
-        self.clip_grad_norm = clip_grad_norm
         self.num_classes = num_classes
         self.automatic_optimization = False
         self.validation_z = torch.randn(20, self.z_dim, device=self.device)
