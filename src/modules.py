@@ -2,24 +2,6 @@ import torch
 import torch.nn as nn
 
 
-class SelfAttention(nn.Module):
-    def __init__(self, embed_size):
-        super(SelfAttention, self).__init__()
-        self.query = nn.Linear(embed_size, embed_size)
-        self.key = nn.Linear(embed_size, embed_size)
-        self.value = nn.Linear(embed_size, embed_size)
-        self.softmax = nn.Softmax(dim=-1)
-
-    def forward(self, x):
-        query = self.query(x)
-        key = self.key(x)
-        value = self.value(x)
-        attn_scores = torch.matmul(query, key.transpose(-2, -1))
-        attn_scores = self.softmax(attn_scores)
-        attn_output = torch.matmul(attn_scores, value)
-        return attn_output
-
-
 class Generator(nn.Module):
     def __init__(self, latent_dim, num_classes, img_size):
         super(Generator, self).__init__()
@@ -30,11 +12,11 @@ class Generator(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(latent_dim, 512),
             nn.ReLU(inplace=True),
-            SelfAttention(512),
             nn.Linear(512, 1024),
             nn.ReLU(inplace=True),
-            SelfAttention(1024),
-            nn.Linear(1024, 1024),
+            nn.Linear(1024, 2048),
+            nn.ReLU(inplace=True),
+            nn.Linear(2048, 1024),
             nn.ReLU(inplace=True),
             nn.Linear(1024, img_size * img_size),
             nn.Tanh()
@@ -56,10 +38,8 @@ class Discriminator(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(img_size * img_size * 2, 1024),
             nn.LeakyReLU(0.2, inplace=True),
-            SelfAttention(1024),
             nn.Linear(1024, 1024),
             nn.LeakyReLU(0.2, inplace=True),
-            SelfAttention(1024),
             nn.Linear(1024, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 1),
