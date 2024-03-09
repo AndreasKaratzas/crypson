@@ -102,7 +102,10 @@ def main(args):
     # Load the best model
     checkpoint = torch.load(best_model_path)
     generator = Generator(
-        latent_dim=checkpoint['latent_dim'], num_classes=checkpoint['num_classes'])
+        latent_dim=checkpoint['latent_dim'], 
+        num_classes=checkpoint['num_classes'],
+        img_size=checkpoint['img_size'],
+        hidden_dim=checkpoint['hidden_dim'])
     generator.load_state_dict(checkpoint['state_dict'])
     generator.to(device)
     generator.eval()

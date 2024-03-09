@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class Generator(nn.Module):
-    def __init__(self, latent_dim, num_classes, img_size):
+    def __init__(self, latent_dim, num_classes, img_size, hidden_dim=256):
         super(Generator, self).__init__()
         self.latent_dim = latent_dim
         self.num_classes = num_classes
@@ -16,10 +16,10 @@ class Generator(nn.Module):
 
         self.res_block1 = ResidualBlock(1024, 1024)
         self.res_block2 = ResidualBlockWShortcut(1024, 512)
-        self.res_block3 = ResidualBlockWShortcut(512, 256)
+        self.res_block3 = ResidualBlockWShortcut(512, hidden_dim)
 
         self.final_layer = nn.Sequential(
-            nn.Linear(256, img_size * img_size),
+            nn.Linear(hidden_dim, img_size * img_size),
             nn.Tanh()
         )
 
