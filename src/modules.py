@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 
@@ -14,9 +15,7 @@ class Generator(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(512, 1024),
             nn.ReLU(inplace=True),
-            nn.Linear(1024, 2048),
-            nn.ReLU(inplace=True),
-            nn.Linear(2048, 1024),
+            nn.Linear(1024, 1024),
             nn.ReLU(inplace=True),
             nn.Linear(1024, img_size * img_size),
             nn.Tanh()
