@@ -37,6 +37,30 @@ class Generator(nn.Module):
         return img
 
 
+class ResidualBlockWShortcut(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResidualBlockWShortcut, self).__init__()
+        self.fc1 = nn.Linear(in_channels, out_channels)
+        self.bn1 = nn.BatchNorm1d(out_channels)
+        self.fc2 = nn.Linear(out_channels, out_channels)
+        self.bn2 = nn.BatchNorm1d(out_channels)
+        self.shortcut = nn.Linear(in_channels, out_channels)
+        self.bn_shortcut = nn.BatchNorm1d(out_channels)
+
+    def forward(self, x):
+        residual = x
+        residual = self.shortcut(residual)
+        residual = self.bn_shortcut(residual)
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = nn.LeakyReLU(0.2)(x)
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x += residual
+        x = nn.LeakyReLU(0.2)(x)
+        return x
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
