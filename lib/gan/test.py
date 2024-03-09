@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 import os
 import torch
@@ -10,8 +10,8 @@ import numpy as np
 from PIL import Image
 from torchvision.utils import make_grid
 
-from src.modules import Generator
-from src.dataset import EMNISTDataModule
+from lib.gan.modules import Generator
+from lib.gan.dataset import EMNISTDataModule
 
 
 def find_best_model(directory):

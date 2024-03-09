@@ -13,13 +13,13 @@ train/
 
 # Distribution / packaging
 .Python
-build/
+# build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -47,7 +47,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
-.cache
+# .cache
 nosetests.xml
 coverage.xml
 *.cover
@@ -127,8 +127,8 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
-venv/
+# env/
+# venv/
 ENV/
 env.bak/
 venv.bak/

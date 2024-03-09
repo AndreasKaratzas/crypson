@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 import os
 import sys
@@ -14,14 +14,14 @@ from rich import print as rprint
 from rich.syntax import Syntax
 from argparse import ArgumentParser
 
-from src.logger import Logger
-from src.engine import Engine
-from src.modules import (
+from lib.gan.logger import Logger
+from lib.gan.engine import Engine
+from lib.gan.modules import (
     Generator, Discriminator)
-from src.dataset import EMNISTDataModule
-from src.registry import CustomProgressBar
-from src.info import collect_env_details
-from src.utils import get_elite
+from lib.gan.dataset import EMNISTDataModule
+from lib.gan.registry import CustomProgressBar
+from lib.gan.info import collect_env_details
+from lib.gan.utils import get_elite
 
 
 def main(args):
