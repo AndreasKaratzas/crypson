@@ -15,3 +15,5 @@ Modern cryptography algorithms using deep learning
 - [ ] Create conda env files
 - [ ] Complete `README.md` with instructions and experimental results
 - [ ] Post my project report and demo video under `docs` directory
+- [ ] Create a GAN `README.md`
+- [ ] Create a VQ-VAE `README.md`
