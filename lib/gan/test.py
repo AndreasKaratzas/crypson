@@ -76,46 +76,34 @@ def parse_input_file(file_path):
     return class_indices
 
 
-def generate_images(generator, class_indices, batch_size, device, img_size=32):
+def generate_images(generator, class_indices, device, img_size=32):
     """Generate images using the generator model."""
     generated_images = []
-    numeric_results = []
     space_index = class_indices[-1]  # Index of the space character
 
-    for i in range(0, len(class_indices), batch_size):
-        batch_indices = class_indices[i:i+batch_size]
-        batch_labels = torch.tensor(
-            [idx for idx in batch_indices if idx != space_index], dtype=torch.long).to(device)
+    batch_labels = torch.tensor(class_idx for class_idx in class_indices if class_idx != space_index).to(device)
+    z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
+    batch_images = generator(z, batch_labels).detach().cpu().view(-1, 1, img_size, img_size)
+    space_images = torch.zeros(class_indices.count(space_index), 1, img_size, img_size)
 
-        z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
-        batch_images = generator(z, batch_labels).detach().cpu().view(
-            -1, 1, img_size, img_size)
+    # Merge generated images and space images
+    merged_images = []
+    space_count = 0
+    for class_idx in class_indices:
+        if class_idx == space_index:
+            merged_images.append(space_images[space_count])
+            space_count += 1
+        else:
+            merged_images.append(batch_images.pop(0))
 
-        # Create black square images for space characters
-        space_images = torch.zeros(batch_indices.count(
-            space_index), 1, img_size, img_size)
-
-        # Merge generated images and space images
-        merged_images = []
-        space_count = 0
-        for idx in batch_indices:
-            if idx == space_index:
-                merged_images.append(space_images[space_count])
-                space_count += 1
-            else:
-                merged_images.append(batch_images[idx - space_count])
-
-        merged_images = torch.stack(merged_images)
-        generated_images.append(merged_images)
-        numeric_results.append(torch.tensor(batch_indices))
-
+    merged_images = torch.stack(merged_images)
+    generated_images.append(merged_images)
     generated_images = torch.cat(generated_images)
-    numeric_results = torch.cat(numeric_results)
+    
+    return generated_images
 
-    return generated_images, numeric_results
 
-
-def save_results(generated_images, numeric_results, output_dir):
+def save_results(generated_images, output_dir):
     """Save the generated images and numeric results."""
     image_grid = make_grid(generated_images, nrow=10)
     image_grid = (image_grid + 1) / 2  # Rescale from [-1, 1] to [0, 1]
@@ -126,9 +114,6 @@ def save_results(generated_images, numeric_results, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     image_path = os.path.join(output_dir, 'generated_images.png')
     image.save(image_path)
-
-    numeric_results_path = os.path.join(output_dir, 'numeric_results.pt')
-    torch.save(numeric_results, numeric_results_path)
 
 
 def main(args):
@@ -163,13 +148,13 @@ def main(args):
 
     # Parse the input file
     class_indices = parse_input_file(input_file)
-
+    
     # Generate images
-    generated_images, numeric_results = generate_images(
-        generator, class_indices, batch_size, device)
+    generated_images = generate_images(generator, class_indices, 
+                                       device, img_size=args.img_size)
 
     # Save the results
-    save_results(generated_images, numeric_results, output_dir)
+    save_results(generated_images, output_dir)
 
     print('Image generation completed successfully.')
 
