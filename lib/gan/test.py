@@ -81,7 +81,7 @@ def parse_input_file(file_path):
         class_indices.append(class_to_idx[' '])  # Add a space between lines
 
     exp_mem[0] = ''.join(exp_mem[0])
-    exp_mem[1] = ''.join([str(i) for i in exp_mem[1]])
+    exp_mem[1] = ' '.join([str(i) for i in exp_mem[1]])
     rprint(f'Prompt: {exp_mem[0]}')
     rprint(f'Classes: {exp_mem[1]}')
 
