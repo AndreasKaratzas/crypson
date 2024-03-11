@@ -59,7 +59,7 @@ def parse_input_file(file_path):
 
     # Define the EMNIST class labels
     emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
-        ord('A'), ord('Z') + 1) + [chr(i) for i in range(ord('a'), ord('z') + 1)]]
+        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)]
 
     class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
     class_indices = [class_to_idx[char] for char in content]
