@@ -140,7 +140,7 @@ def save_results(generated_images, output_dir):
     image_grid = make_grid(generated_images, nrow=5)
     image_grid = (image_grid + 1) / 2  # Rescale from [-1, 1] to [0, 1]
     image_grid = (image_grid * 255).numpy().astype(np.uint8)
-    # image_grid = np.transpose(image_grid, (2, 1, 0))
+    image_grid = np.transpose(image_grid, (2, 1, 0))
     image = Image.fromarray(image_grid)
 
     os.makedirs(output_dir, exist_ok=True)
