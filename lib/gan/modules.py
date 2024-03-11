@@ -9,6 +9,7 @@ class Generator(nn.Module):
         self.latent_dim = latent_dim
         self.num_classes = num_classes
         self.img_size = img_size
+        self.hidden_dim = hidden_dim
         self.embedding = nn.Embedding(num_classes, latent_dim)
 
         self.fc = nn.Linear(latent_dim, 1024)

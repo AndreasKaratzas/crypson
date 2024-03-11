@@ -15,20 +15,39 @@ from lib.gan.dataset import EMNISTDataModule
 
 
 def find_best_model(directory):
-    """Find the best model in the given directory based on validation loss."""
+    """Find the best model in the given directory 
+    based on validation loss. Validation loss is 
+    given in the checkpoint filename. Checkpoints 
+    are saved as 'epoch_{epoch}-loss_{val_loss}.ckpt'.
+    
+    Parameters
+    ----------
+    directory : str
+        Path to the directory containing the trained models.
+
+    Returns
+    -------
+    str
+        Path to the best model.
+
+    Raises
+    ------
+    ValueError
+        If no model is found in the given directory.
+    """
     best_model_path = None
     best_val_loss = float('inf')
 
     for filename in os.listdir(directory):
         if filename.endswith('.ckpt'):
-            checkpoint_path = os.path.join(directory, filename)
-            checkpoint = torch.load(checkpoint_path)
-            val_loss = checkpoint['val_loss']
-
+            val_loss = float(filename.split('-')[1].split('_')[1])
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                best_model_path = checkpoint_path
+                best_model_path = os.path.join(directory, filename)
 
+    if best_model_path is None:
+        raise ValueError('No model found in the given directory.')
+    
     return best_model_path
 
 
@@ -102,11 +121,11 @@ def main(args):
     # Load the best model
     checkpoint = torch.load(best_model_path)
     generator = Generator(
-        latent_dim=checkpoint['latent_dim'], 
-        num_classes=checkpoint['num_classes'],
-        img_size=checkpoint['img_size'],
-        hidden_dim=checkpoint['hidden_dim'])
-    generator.load_state_dict(checkpoint['state_dict'])
+        latent_dim=args.latent_dim, 
+        num_classes=args.num_classes,
+        img_size=args.img_size,
+        hidden_dim=args.hidden_dim)
+    generator.load_state_dict(checkpoint['generator'])
     generator.to(device)
     generator.eval()
 
@@ -131,6 +150,12 @@ if __name__ == '__main__':
                         help='Path to the input file containing the class indices.')
     parser.add_argument('--output-dir', type=str, required=True,
                         help='Path to the output directory.')
+    parser.add_argument('--latent-dim', type=int, default=256,
+                        help='Dimension of the latent space.')
+    parser.add_argument('--num-classes', type=int, default=62,
+                        help='Number of classes in the dataset.')
+    parser.add_argument('--img-size', type=int, default=32,
+                        help='Size of the input images.')
     args = parser.parse_args()
 
     main(args)
