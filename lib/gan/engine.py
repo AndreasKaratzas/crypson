@@ -79,20 +79,19 @@ class Engine(LightningModule):
             Batch index.
         """
         real_images, labels = batch
-        real_images = real_images.view(real_images.size(0), -1)
-        real_images = torch.squeeze(real_images)
-        z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
         opt_d, opt_g = self.optimizers()
 
         # Discriminator training
-        fake_labels = torch.randint(0, self.num_classes, (real_images.size(0),)).to(self.device)
         self.toggle_optimizer(opt_d)
-        fake_images = self(z, fake_labels)
-        real_pred = self.discriminator(real_images, labels)
-        real_loss = self.criterion(real_pred, torch.ones_like(real_pred))
-        fake_pred = self.discriminator(fake_images.detach(), fake_labels)
-        fake_loss = self.criterion(fake_pred, torch.zeros_like(fake_pred))
-        d_loss = (real_loss + fake_loss) / 2
+        real_validity = self.discriminator(real_images, labels)
+        real_labels = torch.ones_like(real_validity, device=self.device)
+        real_loss = self.criterion(real_validity, real_labels)
+        noise = torch.randn(real_images.size(0), self.z_dim, 1, 1, device=self.device)
+        fake_imgs = self(noise, labels)
+        fake_validity = self.discriminator(fake_imgs.detach(), labels)
+        fake_labels = torch.zeros_like(fake_validity, device=self.device)
+        fake_loss = self.criterion(fake_validity, fake_labels)
+        d_loss = real_loss + fake_loss
         # Update the discriminator
         opt_d.zero_grad()
         self.manual_backward(d_loss)
@@ -100,12 +99,13 @@ class Engine(LightningModule):
         self.untoggle_optimizer(opt_d)
         self.log('d_loss', d_loss, on_step=False, on_epoch=True, prog_bar=True)
 
+        
         # Generator training
-        fake_labels = torch.randint(0, self.num_classes, (real_images.size(0),)).to(self.device)
         self.toggle_optimizer(opt_g)
-        fake_images = self(z, fake_labels)
-        fake_pred = self.discriminator(fake_images, fake_labels)
-        g_loss = self.criterion(fake_pred, torch.ones_like(fake_pred))
+        # noise = torch.randn(real_images.size(0), self.z_dim, 1, 1, device=self.device)
+        # fake_imgs = self(noise, labels)
+        fake_validity = self.discriminator(fake_imgs, labels)
+        g_loss = self.criterion(fake_validity, real_labels)
         # Update the generator
         opt_g.zero_grad()
         self.manual_backward(g_loss)
@@ -146,29 +146,25 @@ class Engine(LightningModule):
             Batch index.
         """
         real_images, labels = batch
-        real_images = real_images.view(real_images.size(0), -1)
-        real_images = torch.squeeze(real_images)
-
         # Generating fake images
-        z = torch.randn(real_images.size(0), self.z_dim, device=self.device)
-        fake_images = self(z, labels)
-
-        # Discriminator predictions
-        real_pred = self.discriminator(real_images, labels)
-        fake_pred = self.discriminator(fake_images, labels)
-
-        # Calculate loss for real and fake images
-        real_loss = self.criterion(real_pred, torch.ones_like(real_pred))
-        fake_loss = self.criterion(fake_pred, torch.zeros_like(fake_pred))
-        d_loss = (real_loss + fake_loss) / 2
+        noise = torch.randn(real_images.size(0), self.z_dim, 1, 1, device=self.device)
+        fake_imgs = self(noise, labels)
+        # Discriminator loss
+        real_validity = self.discriminator(real_images, labels)
+        real_labels = torch.ones_like(real_validity, device=self.device)
+        real_loss = self.criterion(real_validity, real_labels)
+        fake_validity = self.discriminator(fake_imgs.detach(), labels)
+        fake_labels = torch.zeros_like(fake_validity, device=self.device)
+        fake_loss = self.criterion(fake_validity, fake_labels)
+        val_loss = real_loss + fake_loss
 
         # Store the step losses in custom lists
         if not hasattr(self, 'val_loss'):
             self.val_loss = []
-        self.val_loss.append(d_loss.item())
+        self.val_loss.append(val_loss.item())
 
         # Log the validation loss
-        self.log('val_loss', d_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         """Configure optimizers for generator and discriminator.
@@ -196,13 +192,10 @@ class Engine(LightningModule):
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
         image_path = os.path.join(image_dir, f"generated_images_epoch_{self.current_epoch}.png")
-        sample_images = self(self.validation_z.to(
-            self.device), torch.randint(0, self.num_classes, (20,)).to(self.device))
-        img_dim = np.prod(sample_images.shape) // 20 
-        img_dim = int(np.sqrt(img_dim))
-        grid = torchvision.utils.make_grid(
-            sample_images.view(20, 1, img_dim, img_dim))
-        
+
+        # Generate images
+        generated_images = self(self.validation_z, torch.arange(self.num_classes, device=self.device))
+        grid = torchvision.utils.make_grid(generated_images, nrow=5, normalize=True)        
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
         self.wandb_logger.experiment.log({"generated_images": wandb.Image(image_path)}, step=self.global_step)
@@ -221,6 +214,10 @@ class Engine(LightningModule):
         dict
             Updated checkpoint dictionary.
         """
+        checkpoint['z_dim'] = self.z_dim
+        checkpoint['num_classes'] = self.num_classes
+        checkpoint['lr'] = self.lr
+        checkpoint['betas'] = self.betas
         checkpoint['generator'] = self.generator.state_dict()
         checkpoint['discriminator'] = self.discriminator.state_dict()
         return checkpoint
@@ -238,6 +235,10 @@ class Engine(LightningModule):
         dict
             Updated checkpoint dictionary.
         """
+        self.z_dim = checkpoint['z_dim']
+        self.num_classes = checkpoint['num_classes']
+        self.lr = checkpoint['lr']
+        self.betas = checkpoint['betas']
         self.generator.load_state_dict(checkpoint['generator'])
         self.discriminator.load_state_dict(checkpoint['discriminator'])
         return checkpoint

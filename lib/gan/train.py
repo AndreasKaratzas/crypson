@@ -74,8 +74,8 @@ def main(args):
     # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
     # ------------
     lnp.lnp('MAIN LightningModule')
-    generator = Generator(args.z_dim, 62, args.resolution, args.hidden_dim)
-    discriminator = Discriminator(62, args.resolution)
+    generator = Generator(args.z_dim, args.resolution, 62)
+    discriminator = Discriminator(args.resolution, 62)
     lm = Engine(generator=generator, discriminator=discriminator, 
                 num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
                 lnp=lnp, wandb_logger=wandb_logger)
@@ -160,7 +160,6 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=100, type=int)
-    parser.add_argument('--hidden-dim', default=256, type=int)
     parser.add_argument('--lr', default=0.0002, type=float)
     parser.add_argument('--betas', nargs='+', default=[0.5, 0.999], type=float)
     parser.add_argument('--resolution', default=28, type=int)
