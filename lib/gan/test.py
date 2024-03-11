@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 
 from PIL import Image
+from rich import print as rprint
 from torchvision.utils import make_grid
 
 from lib.gan.modules import Generator
@@ -64,14 +65,25 @@ def parse_input_file(file_path):
     class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
     class_indices = []
 
+    exp_mem = [[], []]
+
     for line in lines:
         line = line.strip()
         for char in line:
             if char in class_to_idx:
                 class_indices.append(class_to_idx[char])
+                exp_mem[0].append(char)
+                exp_mem[1].append(class_to_idx[char])
             else:
                 class_indices.append(class_to_idx[' '])
+                exp_mem[0].append(' ')
+                exp_mem[1].append(class_to_idx[' '])
         class_indices.append(class_to_idx[' '])  # Add a space between lines
+
+    exp_mem[0] = ''.join(exp_mem[0])
+    exp_mem[1] = ''.join([str(i) for i in exp_mem[1]])
+    rprint(f'Prompt: {exp_mem[0]}')
+    rprint(f'Classes: {exp_mem[1]}')
 
     return class_indices
 
