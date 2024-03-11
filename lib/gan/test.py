@@ -76,7 +76,7 @@ def parse_input_file(file_path):
     return class_indices
 
 
-def generate_images(generator, class_indices, batch_size, device, img_size=32):
+def generate_images(generator, class_indices, batch_size, device, img_size=28):
     """Generate images using the generator model."""
     generated_images = []
     numeric_results = []
@@ -84,17 +84,29 @@ def generate_images(generator, class_indices, batch_size, device, img_size=32):
 
     for i in range(0, len(class_indices), batch_size):
         batch_indices = class_indices[i:i+batch_size]
-        batch_labels = torch.tensor(batch_indices, dtype=torch.long).to(device)
+        batch_labels = torch.tensor(
+            [idx for idx in batch_indices if idx != space_index], dtype=torch.long).to(device)
 
-        # Create a mask for valid characters (non-space)
-        mask = (batch_labels != space_index).float(
-        ).unsqueeze(-1).unsqueeze(-1)
+        z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
+        batch_images = generator(z, batch_labels).detach().cpu()
 
-        z = torch.randn(len(batch_indices), generator.latent_dim).to(device)
-        batch_images = generator(z, batch_labels).detach().cpu() * mask
+        # Create black square images for space characters
+        space_images = torch.zeros(batch_indices.count(
+            space_index), 1, img_size, img_size)
 
-        generated_images.append(batch_images)
-        numeric_results.append(batch_labels.cpu())
+        # Merge generated images and space images
+        merged_images = []
+        space_count = 0
+        for idx in batch_indices:
+            if idx == space_index:
+                merged_images.append(space_images[space_count])
+                space_count += 1
+            else:
+                merged_images.append(batch_images[idx - space_count])
+
+        merged_images = torch.stack(merged_images)
+        generated_images.append(merged_images)
+        numeric_results.append(torch.tensor(batch_indices))
 
     generated_images = torch.cat(generated_images)
     numeric_results = torch.cat(numeric_results)
