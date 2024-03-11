@@ -76,7 +76,7 @@ def parse_input_file(file_path):
     return class_indices
 
 
-def generate_images(generator, class_indices, batch_size, device, img_size=28):
+def generate_images(generator, class_indices, batch_size, device, img_size=32):
     """Generate images using the generator model."""
     generated_images = []
     numeric_results = []
@@ -88,7 +88,8 @@ def generate_images(generator, class_indices, batch_size, device, img_size=28):
             [idx for idx in batch_indices if idx != space_index], dtype=torch.long).to(device)
 
         z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
-        batch_images = generator(z, batch_labels).detach().cpu()
+        batch_images = generator(z, batch_labels).detach().cpu().view(
+            -1, 1, img_size, img_size)
 
         # Create black square images for space characters
         space_images = torch.zeros(batch_indices.count(
