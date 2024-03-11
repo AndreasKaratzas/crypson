@@ -121,7 +121,7 @@ def main(args):
         dirpath=checkpoint_dirpath,
         filename="epoch_{epoch:05d}-loss_{val_loss:.5f}",
         auto_insert_metric_name=False,
-        
+        save_last=True,        
     )
     l_callbacks.append(cbModelCheckpoint)
     
