@@ -114,9 +114,8 @@ def generate_images(generator, class_indices, device, img_size=32, output_dir='.
         label = idx_to_class[batch_labels[i].item()]
         img = batch_images[i]
         img = (img + 1) / 2
-        img = (img * 255).numpy().astype(np.uint8)
-        img = np.transpose(img, (1, 2, 0))
-        img = Image.fromarray(img)
+        img = (img * 255).squeeze().numpy().astype(np.uint8)
+        img = Image.fromarray(img, mode='L')
         img.save(os.path.join(output_dir, f'{label}_{i}.png'))
 
     # Merge generated images and space images
