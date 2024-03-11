@@ -156,6 +156,8 @@ if __name__ == '__main__':
                         help='Number of classes in the dataset.')
     parser.add_argument('--img-size', type=int, default=32,
                         help='Size of the input images.')
+    parser.add_argument('--hidden-dim', type=int, default=256,
+                        help='Dimension of the hidden layer in the generator model.')
     args = parser.parse_args()
 
     main(args)
