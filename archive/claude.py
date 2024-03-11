@@ -1,10 +1,11 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torchvision.datasets import EMNIST
 from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
+from PIL import Image
 
 
 class Generator(nn.Module):
@@ -125,6 +126,10 @@ for epoch in range(num_epochs):
 torch.save(generator.state_dict(), "generator.pt")
 torch.save(discriminator.state_dict(), "discriminator.pt")
 
+# Create output directory
+output_dir = 'generated_images'
+os.makedirs(output_dir, exist_ok=True)
+
 # Evaluation loop
 generator.eval()
 with torch.no_grad():
@@ -133,10 +138,10 @@ with torch.no_grad():
         noise = torch.randn(1, latent_dim, 1, 1, device=device)
         generated_img = generator(noise, label)
         generated_img = generated_img.squeeze().cpu().numpy()
-        plt.imshow(generated_img, cmap='gray')
-        plt.title(f"Generated Image - Label {i}")
-        plt.axis('off')
-        plt.show()
+
+        # Convert the generated image to PIL Image and save it
+        img = Image.fromarray((generated_img * 255).astype('uint8'), mode='L')
+        img.save(os.path.join(output_dir, f'generated_label_{i}.png'))
 
 # Testing loop with custom labels
 generator.eval()
@@ -147,7 +152,8 @@ with torch.no_grad():
         noise = torch.randn(1, latent_dim, 1, 1, device=device)
         generated_img = generator(noise, label_tensor)
         generated_img = generated_img.squeeze().cpu().numpy()
-        plt.imshow(generated_img, cmap='gray')
-        plt.title(f"Generated Image - Custom Label {label}")
-        plt.axis('off')
-        plt.show()
+
+        # Convert the generated image to PIL Image and save it
+        img = Image.fromarray((generated_img * 255).astype('uint8'), mode='L')
+        img.save(os.path.join(
+            output_dir, f'generated_custom_label_{label}.png'))
