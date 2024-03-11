@@ -52,14 +52,18 @@ def find_best_model(directory):
 
 
 def parse_input_file(file_path):
+    # TODO: Utilize the deterministic file under the data directory (`idx_to_class.json`)
     """Parse the input file and return a list of EMNIST class indices."""
     with open(file_path, 'r') as file:
         content = file.read().strip()
 
-    datamodule = EMNISTDataModule()
-    class_to_idx = {cls: idx for idx, cls in enumerate(datamodule.classes)}
+    # Define the EMNIST class labels
+    emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
+        ord('A'), ord('Z') + 1) + [chr(i) for i in range(ord('a'), ord('z') + 1)]]
 
+    class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
     class_indices = [class_to_idx[char] for char in content]
+
     return class_indices
 
 
