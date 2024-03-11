@@ -194,11 +194,10 @@ class Engine(LightningModule):
         # Generate images
         generated_images = self(
             torch.randn(self.num_classes, self.z_dim, device=self.device), 
-            torch.arange(self.num_classes, device=self.device))        
-        generated_images = generated_images.squeeze().cpu().numpy()
+            torch.arange(self.num_classes, device=self.device))
         generated_images = (generated_images + 1) / 2
         generated_images = (generated_images * 255).astype('uint8')
-        generated_images = generated_images.transpose(2, 1, 0)
+        generated_images = generated_images.transpose(2, 1, 0).squeeze().cpu().numpy()
         grid = torchvision.utils.make_grid(generated_images, nrow=5, normalize=True)        
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
