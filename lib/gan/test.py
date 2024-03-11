@@ -101,6 +101,9 @@ def generate_images(generator, class_indices, device, img_size=32):
     ).cpu().view(-1, 1, img_size, img_size)
     space_images = torch.zeros(class_indices.count(
         space_index), 1, img_size, img_size)
+    
+    # Transpose the images to the correct format
+    batch_images = batch_images.transpose(2, 3)
 
     # Merge generated images and space images
     merged_images = []
@@ -121,10 +124,10 @@ def generate_images(generator, class_indices, device, img_size=32):
 
 def save_results(generated_images, output_dir):
     """Save the generated images and numeric results."""
-    image_grid = make_grid(generated_images, nrow=3)
+    image_grid = make_grid(generated_images, nrow=5)
     image_grid = (image_grid + 1) / 2  # Rescale from [-1, 1] to [0, 1]
     image_grid = (image_grid * 255).numpy().astype(np.uint8)
-    image_grid = np.transpose(image_grid, (2, 1, 0))
+    # image_grid = np.transpose(image_grid, (2, 1, 0))
     image = Image.fromarray(image_grid)
 
     os.makedirs(output_dir, exist_ok=True)
