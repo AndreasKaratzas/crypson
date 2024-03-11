@@ -95,6 +95,7 @@ def generate_images(generator, class_indices, device, img_size=32):
 
     batch_labels = torch.tensor(
         [class_idx for class_idx in class_indices if class_idx != space_index]).to(device)
+    rprint(f'Batch labels: {batch_labels}')
     z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
     batch_images = generator(z, batch_labels).detach(
     ).cpu().view(-1, 1, img_size, img_size)
@@ -120,10 +121,10 @@ def generate_images(generator, class_indices, device, img_size=32):
 
 def save_results(generated_images, output_dir):
     """Save the generated images and numeric results."""
-    image_grid = make_grid(generated_images, nrow=10)
+    image_grid = make_grid(generated_images, nrow=3)
     image_grid = (image_grid + 1) / 2  # Rescale from [-1, 1] to [0, 1]
     image_grid = (image_grid * 255).numpy().astype(np.uint8)
-    image_grid = np.transpose(image_grid, (1, 2, 0))
+    image_grid = np.transpose(image_grid, (2, 1, 0))
     image = Image.fromarray(image_grid)
 
     os.makedirs(output_dir, exist_ok=True)
