@@ -88,7 +88,7 @@ def parse_input_file(file_path):
     return class_indices
 
 
-def generate_images(generator, class_indices, device, img_size=32):
+def generate_images(generator, class_indices, device, img_size=32, output_dir='../../data'):
     """Generate images using the generator model."""
     generated_images = []
     space_index = class_indices[-1]  # Index of the space character
@@ -104,6 +104,20 @@ def generate_images(generator, class_indices, device, img_size=32):
     
     # Transpose the images to the correct format
     batch_images = batch_images.transpose(2, 3)
+    # Temporarily save the generated images along with their labels
+    emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
+        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)] + [' ']
+
+    class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
+    idx_to_class = {i: c for c, i in class_to_idx.items()}
+    for i in range(len(batch_images)):
+        label = idx_to_class[batch_labels[i].item()]
+        img = batch_images[i]
+        img = (img + 1) / 2
+        img = (img * 255).numpy().astype(np.uint8)
+        img = np.transpose(img, (1, 2, 0))
+        img = Image.fromarray(img)
+        img.save(os.path.join(output_dir, f'{label}_{i}.png'))
 
     # Merge generated images and space images
     merged_images = []
@@ -170,7 +184,8 @@ def main(args):
 
     # Generate images
     generated_images = generate_images(generator, class_indices,
-                                       device, img_size=args.img_size)
+                                       device, img_size=args.img_size,
+                                       output_dir=output_dir)
 
     # Save the results
     save_results(generated_images, output_dir)
