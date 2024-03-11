@@ -16,8 +16,9 @@ class Generator(nn.Module):
         self.bn_fc = nn.BatchNorm1d(1024)
 
         self.res_block1 = ResidualBlock(1024, 1024)
-        self.res_block2 = ResidualBlockWShortcut(1024, 512)
-        self.res_block3 = ResidualBlockWShortcut(512, hidden_dim)
+        self.res_block2 = ResidualBlock(1024, 1024)
+        self.res_block3 = ResidualBlockWShortcut(1024, 512)
+        self.res_block4 = ResidualBlockWShortcut(512, hidden_dim)
 
         self.final_layer = nn.Sequential(
             nn.Linear(hidden_dim, img_size * img_size),
@@ -33,6 +34,7 @@ class Generator(nn.Module):
         x = self.res_block1(x)
         x = self.res_block2(x)
         x = self.res_block3(x)
+        x = self.res_block4(x)
         img = self.final_layer(x)
         img = img.view(img.size(0), self.img_size * self.img_size)
         return img
