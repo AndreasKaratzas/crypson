@@ -11,7 +11,6 @@ from PIL import Image
 from torchvision.utils import make_grid
 
 from lib.gan.modules import Generator
-from lib.gan.dataset import EMNISTDataModule
 
 
 def find_best_model(directory):
@@ -40,14 +39,15 @@ def find_best_model(directory):
 
     for filename in os.listdir(directory):
         if filename.endswith('.ckpt'):
-            val_loss = float(filename.split('-')[1].split('_')[1].split('.')[0])
+            val_loss = float(filename.split(
+                '-')[1].split('_')[1].split('.')[0])
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 best_model_path = os.path.join(directory, filename)
 
     if best_model_path is None:
         raise ValueError('No model found in the given directory.')
-    
+
     return best_model_path
 
 
@@ -81,10 +81,13 @@ def generate_images(generator, class_indices, device, img_size=32):
     generated_images = []
     space_index = class_indices[-1]  # Index of the space character
 
-    batch_labels = torch.tensor(class_idx for class_idx in class_indices if class_idx != space_index).to(device)
+    batch_labels = torch.tensor(
+        [class_idx for class_idx in class_indices if class_idx != space_index]).to(device)
     z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
-    batch_images = generator(z, batch_labels).detach().cpu().view(-1, 1, img_size, img_size)
-    space_images = torch.zeros(class_indices.count(space_index), 1, img_size, img_size)
+    batch_images = generator(z, batch_labels).detach(
+    ).cpu().view(-1, 1, img_size, img_size)
+    space_images = torch.zeros(class_indices.count(
+        space_index), 1, img_size, img_size)
 
     # Merge generated images and space images
     merged_images = []
@@ -94,12 +97,12 @@ def generate_images(generator, class_indices, device, img_size=32):
             merged_images.append(space_images[space_count])
             space_count += 1
         else:
-            merged_images.append(batch_images.pop(0))
+            merged_images.append(batch_images[class_idx - space_count])
 
     merged_images = torch.stack(merged_images)
     generated_images.append(merged_images)
     generated_images = torch.cat(generated_images)
-    
+
     return generated_images
 
 
@@ -138,7 +141,7 @@ def main(args):
     # Load the best model
     checkpoint = torch.load(best_model_path)
     generator = Generator(
-        latent_dim=args.latent_dim, 
+        latent_dim=args.latent_dim,
         num_classes=args.num_classes,
         img_size=args.img_size,
         hidden_dim=args.hidden_dim)
@@ -148,9 +151,9 @@ def main(args):
 
     # Parse the input file
     class_indices = parse_input_file(input_file)
-    
+
     # Generate images
-    generated_images = generate_images(generator, class_indices, 
+    generated_images = generate_images(generator, class_indices,
                                        device, img_size=args.img_size)
 
     # Save the results
@@ -160,7 +163,8 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate images using a trained model.')
+    parser = argparse.ArgumentParser(
+        description='Generate images using a trained model.')
     parser.add_argument('--model-dir', type=str, required=True,
                         help='Path to the directory containing the trained models.')
     parser.add_argument('--input-file', type=str, required=True,
