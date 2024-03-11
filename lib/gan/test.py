@@ -97,6 +97,7 @@ def generate_images(generator, class_indices, device, img_size=32, output_dir='.
         [class_idx for class_idx in class_indices if class_idx != space_index]).to(device)
     rprint(f'Batch labels: {batch_labels}')
     z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
+    rprint(f"Input noise shape: {z.shape}\n Batch labels shape: {batch_labels.shape}")
     batch_images = generator(z, batch_labels).detach(
     ).cpu().view(-1, 1, img_size, img_size)
     space_images = torch.zeros(class_indices.count(
@@ -166,6 +167,7 @@ def main(args):
 
     # Find the best model
     best_model_path = find_best_model(model_dir)
+    rprint(f'Best model found at: {best_model_path}')
 
     # Load the best model
     checkpoint = torch.load(best_model_path)
