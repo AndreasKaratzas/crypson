@@ -102,8 +102,8 @@ class Engine(LightningModule):
         
         # Generator training
         self.toggle_optimizer(opt_g)
-        # noise = torch.randn(real_images.size(0), self.z_dim, 1, 1, device=self.device)
-        # fake_imgs = self(noise, labels)
+        noise = torch.randn(real_images.size(0), self.z_dim, 1, 1, device=self.device)
+        fake_imgs = self(noise, labels)
         fake_validity = self.discriminator(fake_imgs, labels)
         g_loss = self.criterion(fake_validity, real_labels)
         # Update the generator
