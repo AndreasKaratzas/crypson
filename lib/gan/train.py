@@ -122,7 +122,6 @@ def main(args):
         filename="epoch_{epoch:05d}-loss_{d_loss:.5f}",
         auto_insert_metric_name=False,
         save_last=True,
-        save_last_k=5,
     )
     l_callbacks.append(cbModelCheckpoint)
     
