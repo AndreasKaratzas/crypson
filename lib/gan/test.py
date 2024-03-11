@@ -55,35 +55,50 @@ def parse_input_file(file_path):
     # TODO: Utilize the deterministic file under the data directory (`idx_to_class.json`)
     """Parse the input file and return a list of EMNIST class indices."""
     with open(file_path, 'r') as file:
-        content = file.read().strip()
+        lines = file.readlines()
 
     # Define the EMNIST class labels
     emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
-        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)]
+        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)] + [' ']
 
     class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
-    class_indices = [class_to_idx[char] for char in content]
+    class_indices = []
+
+    for line in lines:
+        line = line.strip()
+        for char in line:
+            if char in class_to_idx:
+                class_indices.append(class_to_idx[char])
+            else:
+                class_indices.append(class_to_idx[' '])
+        class_indices.append(class_to_idx[' '])  # Add a space between lines
 
     return class_indices
 
 
-def generate_images(generator, class_indices, batch_size, device):
+def generate_images(generator, class_indices, batch_size, device, img_size=32):
     """Generate images using the generator model."""
     generated_images = []
     numeric_results = []
+    space_index = class_indices[-1]  # Index of the space character
 
     for i in range(0, len(class_indices), batch_size):
         batch_indices = class_indices[i:i+batch_size]
         batch_labels = torch.tensor(batch_indices, dtype=torch.long).to(device)
 
+        # Create a mask for valid characters (non-space)
+        mask = (batch_labels != space_index).float(
+        ).unsqueeze(-1).unsqueeze(-1)
+
         z = torch.randn(len(batch_indices), generator.latent_dim).to(device)
-        batch_images = generator(z, batch_labels).detach().cpu()
+        batch_images = generator(z, batch_labels).detach().cpu() * mask
 
         generated_images.append(batch_images)
         numeric_results.append(batch_labels.cpu())
 
     generated_images = torch.cat(generated_images)
     numeric_results = torch.cat(numeric_results)
+
     return generated_images, numeric_results
 
 
