@@ -47,7 +47,7 @@ class Engine(LightningModule):
         self.betas = betas
         self.num_classes = num_classes
         self.automatic_optimization = False
-        self.validation_z = torch.randn(20, self.z_dim, device=self.device)
+        self.validation_z = torch.randn(self.num_classes, self.z_dim, device=self.device)
         self.criterion = torch.nn.BCELoss()
         self.lnp = lnp
         self.wandb_logger = wandb_logger
