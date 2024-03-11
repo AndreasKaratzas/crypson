@@ -47,7 +47,6 @@ class Engine(LightningModule):
         self.betas = betas
         self.num_classes = num_classes
         self.automatic_optimization = False
-        self.validation_z = torch.randn(self.num_classes, self.z_dim, device=self.device)
         self.criterion = torch.nn.BCELoss()
         self.lnp = lnp
         self.wandb_logger = wandb_logger
@@ -192,9 +191,10 @@ class Engine(LightningModule):
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
         image_path = os.path.join(image_dir, f"generated_images_epoch_{self.current_epoch}.png")
-
         # Generate images
-        generated_images = self(self.validation_z, torch.arange(self.num_classes, device=self.device))
+        generated_images = self(
+            torch.randn(self.num_classes, self.z_dim, device=self.device), 
+            torch.arange(self.num_classes, device=self.device))
         grid = torchvision.utils.make_grid(generated_images, nrow=5, normalize=True)        
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
