@@ -116,10 +116,10 @@ def main(args):
 
     cbModelCheckpoint = pl.callbacks.ModelCheckpoint(
         save_top_k=5,
-        monitor="d_loss",
+        monitor="val_loss",
         mode="min",
         dirpath=checkpoint_dirpath,
-        filename="epoch_{epoch:05d}-loss_{d_loss:.5f}",
+        filename="epoch_{epoch:05d}-loss_{val_loss:.5f}",
         auto_insert_metric_name=False,
         save_last=True,
     )
