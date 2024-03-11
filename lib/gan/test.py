@@ -40,7 +40,7 @@ def find_best_model(directory):
 
     for filename in os.listdir(directory):
         if filename.endswith('.ckpt'):
-            val_loss = float(filename.split('-')[1].split('_')[1])
+            val_loss = float(filename.split('-')[1].split('_')[1].split('.')[0])
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 best_model_path = os.path.join(directory, filename)
