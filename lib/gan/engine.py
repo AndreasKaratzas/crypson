@@ -196,8 +196,7 @@ class Engine(LightningModule):
             torch.randn(self.num_classes, self.z_dim, device=self.device), 
             torch.arange(self.num_classes, device=self.device))
         generated_images = generated_images.permute(0, 1, 3, 2)
-        grid = torchvision.utils.make_grid(generated_images).view(
-            self.num_classes, 1, self.generator.img_size, self.generator.img_size)        
+        grid = torchvision.utils.make_grid(generated_images, nrow=5, normalize=True)
         save_image(grid, image_path)
         self.logger.experiment.add_image("generated_images", grid, global_step=self.global_step)
         self.wandb_logger.experiment.log({"generated_images": wandb.Image(image_path)}, step=self.global_step)
