@@ -74,10 +74,10 @@ def main(args):
     # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
     # ------------
     lnp.lnp('MAIN LightningModule')
-    generator = Generator(args.z_dim, args.resolution, 62)
-    discriminator = Discriminator(args.resolution, 62)
+    generator = Generator(args.z_dim, args.resolution, args.num_classes)
+    discriminator = Discriminator(args.resolution, args.num_classes)
     lm = Engine(generator=generator, discriminator=discriminator, 
-                num_classes=62, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
+                num_classes=args.num_classes, z_dim=args.z_dim, lr=args.lr, betas=args.betas,
                 lnp=lnp, wandb_logger=wandb_logger)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
@@ -86,12 +86,6 @@ def main(args):
     # https://pytorch-lightning.readthedocs.io/en/latest/extensions/callbacks.html
     lnp.lnp('MAIN callbacks')
     l_callbacks = []
-
-    # early stopping
-    # https://pytorch-lightning.readthedocs.io/en/latest/common/early_stopping.html
-    cbEarlyStopping = pl.callbacks.early_stopping.EarlyStopping(
-        monitor='val_loss', patience=args.es_patience)
-    l_callbacks.append(cbEarlyStopping)
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
@@ -115,14 +109,13 @@ def main(args):
             lm.discriminator.load_state_dict(ckp.get('discriminator'))
 
     cbModelCheckpoint = pl.callbacks.ModelCheckpoint(
-        save_top_k=5,
-        monitor="val_loss",
+        save_top_k=10,
+        monitor="d_loss",
         mode="min",
         dirpath=checkpoint_dirpath,
-        filename="epoch_{epoch:05d}-loss_{val_loss:.5f}",
+        filename="epoch_{epoch:05d}-loss_{d_loss:.5f}",
         auto_insert_metric_name=False,
-        save_last=True,
-    )
+        save_last=True,)
     l_callbacks.append(cbModelCheckpoint)
     
     lnp.lnp('MAIN trainer')
@@ -154,17 +147,17 @@ if __name__ == '__main__':
     parser.add_argument('--experiment', default='DCGan', type=str)
     parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
-    parser.add_argument('--num-epochs', default=20, type=int)
-    parser.add_argument('--es-patience', default=50, type=int)
-    parser.add_argument('--val-split', default=0.15, type=float)
+    parser.add_argument('--num-classes', default=47, type=int)
+    parser.add_argument('--num-epochs', default=10, type=int)
+    parser.add_argument('--val-split', default=0.05, type=float)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--resume', action="store_true")
-    parser.add_argument('--z-dim', default=100, type=int)
+    parser.add_argument('--z-dim', default=128, type=int)
     parser.add_argument('--lr', default=0.0002, type=float)
     parser.add_argument('--betas', nargs='+', default=[0.5, 0.999], type=float)
-    parser.add_argument('--resolution', default=28, type=int)
+    parser.add_argument('--resolution', default=32, type=int)
     parser.add_argument('--ckpt-path', type=str)
-    parser.add_argument('--dataset', default='../data', type=str)
+    parser.add_argument('--dataset', default='../../data', type=str)
     parser.add_argument('--alias', type=str, default=None)
 
     # trainer level args

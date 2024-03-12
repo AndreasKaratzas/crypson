@@ -3,6 +3,7 @@ import sys
 sys.path.append('../../')
 
 import os
+import json
 import torch
 import argparse
 import numpy as np
@@ -52,19 +53,20 @@ def find_best_model(directory):
     return best_model_path
 
 
-def parse_input_file(file_path):
-    # TODO: Utilize the deterministic file under the data directory (`idx_to_class.json`)
-    """Parse the input file and return a list of EMNIST class indices."""
-    with open(file_path, 'r') as file:
+def parse_input_file(prompt_path, classes_path):
+    """Parse the input prompt file and return a list of EMNIST class indices."""
+    with open(prompt_path, 'r') as file:
         lines = file.readlines()
 
-    # Define the EMNIST class labels
-    emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
-        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)] + [' ']
+    # Define the EMNIST class labels utilizing the `idx_to_class.json` file
+    with open(classes_path, 'r') as file:
+        class_to_idx = json.load(file)
 
-    class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
+    max_class_idx = max(class_to_idx.values())
+    space_idx = max_class_idx + 1
+    class_to_idx[' '] = space_idx  # Add space character to the class labels
+
     class_indices = []
-
     exp_mem = [[], []]
 
     for line in lines:
@@ -75,20 +77,25 @@ def parse_input_file(file_path):
                 exp_mem[0].append(char)
                 exp_mem[1].append(class_to_idx[char])
             else:
-                class_indices.append(class_to_idx[' '])
+                # Use the space index for unknown characters
+                class_indices.append(space_idx)
                 exp_mem[0].append(' ')
-                exp_mem[1].append(class_to_idx[' '])
-        class_indices.append(class_to_idx[' '])  # Add a space between lines
+                exp_mem[1].append(space_idx)
+
+        class_indices.append(space_idx)  # Add a space between lines
+        exp_mem[0].append(' ')
+        exp_mem[1].append(space_idx)
 
     exp_mem[0] = ''.join(exp_mem[0])
     exp_mem[1] = ' '.join([str(i) for i in exp_mem[1]])
-    rprint(f'Prompt: {exp_mem[0]}')
-    rprint(f'Classes: {exp_mem[1]}')
+
+    print(f'Prompt: {exp_mem[0]}')
+    print(f'Classes: {exp_mem[1]}')
 
     return class_indices
 
 
-def generate_images(generator, class_indices, device, img_size=32, output_dir='../../data'):
+def generate_images(generator, class_indices, device, img_size=32, output_dir='../../data', latent_dim=256):
     """Generate images using the generator model."""
     generated_images = []
     space_index = class_indices[-1]  # Index of the space character
@@ -96,7 +103,7 @@ def generate_images(generator, class_indices, device, img_size=32, output_dir='.
     batch_labels = torch.tensor(
         [class_idx for class_idx in class_indices if class_idx != space_index]).to(device)
     rprint(f'Batch labels: {batch_labels}')
-    z = torch.randn(len(batch_labels), generator.latent_dim).to(device)
+    z = torch.randn(len(batch_labels), latent_dim).to(device)
     rprint(f"Input noise shape: {z.shape}\n Batch labels shape: {batch_labels.shape}")
     batch_images = generator(z, batch_labels).detach(
     ).cpu().view(-1, 1, img_size, img_size)
@@ -153,14 +160,8 @@ def main(args):
     # Set the path to the directory containing the trained models
     model_dir = args.model_dir
 
-    # Set the path to the input file
-    input_file = args.input_file
-
     # Set the output directory
     output_dir = args.output_dir
-
-    # Set the batch size for image generation
-    batch_size = 128
 
     # Set the device (CPU or GPU)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -174,19 +175,19 @@ def main(args):
     generator = Generator(
         latent_dim=args.latent_dim,
         num_classes=args.num_classes,
-        img_size=args.img_size,
-        hidden_dim=args.hidden_dim)
+        img_size=args.img_size,)
     generator.load_state_dict(checkpoint['generator'])
     generator.to(device)
     generator.eval()
 
     # Parse the input file
-    class_indices = parse_input_file(input_file)
+    class_indices = parse_input_file(args.prompt_path, args.classes_path)
 
     # Generate images
     generated_images = generate_images(generator, class_indices,
                                        device, img_size=args.img_size,
-                                       output_dir=output_dir)
+                                       output_dir=output_dir,
+                                       latent_dim=args.latent_dim,)
 
     # Save the results
     save_results(generated_images, output_dir)
@@ -199,18 +200,18 @@ if __name__ == '__main__':
         description='Generate images using a trained model.')
     parser.add_argument('--model-dir', type=str, required=True,
                         help='Path to the directory containing the trained models.')
-    parser.add_argument('--input-file', type=str, required=True,
-                        help='Path to the input file containing the class indices.')
+    parser.add_argument('--prompt-path', type=str, required=True,
+                        help='Path to the input prompt file.')
+    parser.add_argument('--classes-path', type=str, required=True,
+                        help='Path to the classes JSON path.')
     parser.add_argument('--output-dir', type=str, required=True,
                         help='Path to the output directory.')
     parser.add_argument('--latent-dim', type=int, default=256,
                         help='Dimension of the latent space.')
-    parser.add_argument('--num-classes', type=int, default=62,
+    parser.add_argument('--num-classes', type=int, default=47,
                         help='Number of classes in the dataset.')
     parser.add_argument('--img-size', type=int, default=32,
                         help='Size of the input images.')
-    parser.add_argument('--hidden-dim', type=int, default=256,
-                        help='Dimension of the hidden layer in the generator model.')
     args = parser.parse_args()
 
     main(args)
