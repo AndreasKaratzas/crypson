@@ -54,49 +54,73 @@ def find_best_model(directory):
 
 
 def parse_input_file(prompt_path, classes_path):
-    """Parse the input prompt file and return a list of EMNIST class indices."""
+    """Parse the input prompt file and return 
+    a list of EMNIST class indices. The class
+    indices are based on the mapping in the
+    classes JSON file.
+    
+    Parameters
+    ----------
+    prompt_path : str
+        Path to the input prompt file.
+    classes_path : str
+        Path to the classes JSON file.
+        
+    Returns
+    -------
+    list
+        List of EMNIST class indices.
+        
+    Raises
+    ------
+    FileNotFoundError
+        If the input prompt file or classes JSON file is not found.
+    """
     with open(prompt_path, 'r') as file:
         lines = file.readlines()
-
-    # Define the EMNIST class labels utilizing the `idx_to_class.json` file
+    
     with open(classes_path, 'r') as file:
         class_to_idx = json.load(file)
 
-    max_class_idx = max(class_to_idx.values())
-    space_idx = max_class_idx + 1
-    class_to_idx[' '] = space_idx  # Add space character to the class labels
-
-    class_indices = []
-    exp_mem = [[], []]
-
+    class_to_idx[' '] = -1
+    class_to_idx['\n'] = -1
+    tokens = []
     for line in lines:
-        line = line.strip()
         for char in line:
-            if char in class_to_idx:
-                class_indices.append(class_to_idx[char])
-                exp_mem[0].append(char)
-                exp_mem[1].append(class_to_idx[char])
-            else:
-                # Use the space index for unknown characters
-                class_indices.append(space_idx)
-                exp_mem[0].append(' ')
-                exp_mem[1].append(space_idx)
-
-        class_indices.append(space_idx)  # Add a space between lines
-        exp_mem[0].append(' ')
-        exp_mem[1].append(space_idx)
-
-    exp_mem[0] = ''.join(exp_mem[0])
-    exp_mem[1] = ' '.join([str(i) for i in exp_mem[1]])
-
-    print(f'Prompt: {exp_mem[0]}')
-    print(f'Classes: {exp_mem[1]}')
-
-    return class_indices
+            tokens.append(class_to_idx[char])
+    
+    rprint(f'Prompt: {lines}')
+    rprint(f'Class indices: {tokens}')
+    return tokens
 
 
-def generate_images(generator, class_indices, device, img_size=32, output_dir='../../data', latent_dim=256):
-    """Generate images using the generator model."""
+def generate_images(generator, class_indices, device, 
+                    img_size=32, output_dir='../../data', latent_dim=256, 
+                    classes_path='../data/idx_to_class.json'):
+    """Generate images using the generator model.
+    
+    Parameters
+    ----------
+    generator : torch.nn.Module
+        Generator model.
+    class_indices : list
+        List of class indices.
+    device : torch.device
+        Device (CPU or GPU) to use for image generation.
+    img_size : int, optional
+        Size of the input images, by default 32.
+    output_dir : str, optional
+        Path to the output directory, by default '../../data'.
+    latent_dim : int, optional
+        Dimension of the latent space, by default 256.
+    classes_path : str, optional
+        Path to the classes JSON file, by default '../data/idx_to_class.json'.
+    
+    Returns
+    -------
+    torch.Tensor
+        Generated images.
+    """
     generated_images = []
     space_index = class_indices[-1]  # Index of the space character
 
@@ -112,12 +136,15 @@ def generate_images(generator, class_indices, device, img_size=32, output_dir='.
     
     # Transpose the images to the correct format
     batch_images = batch_images.transpose(2, 3)
-    # Temporarily save the generated images along with their labels
-    emnist_classes = [str(i) for i in range(10)] + [chr(i) for i in range(
-        ord('A'), ord('Z') + 1)] + [chr(i) for i in range(ord('a'), ord('z') + 1)] + [' ']
 
-    class_to_idx = {cls: idx for idx, cls in enumerate(emnist_classes)}
-    idx_to_class = {i: c for c, i in class_to_idx.items()}
+    with open(classes_path, 'r') as file:
+        class_to_idx = json.load(file)
+    
+    class_to_idx[' '] = -1
+    class_to_idx['\n'] = -1
+    idx_to_class = {v: k for k, v in class_to_idx.items()}
+
+    # Save the generated images
     for i in range(len(batch_images)):
         label = idx_to_class[batch_labels[i].item()]
         img = batch_images[i]
@@ -146,7 +173,7 @@ def generate_images(generator, class_indices, device, img_size=32, output_dir='.
 def save_results(generated_images, output_dir):
     """Save the generated images and numeric results."""
     image_grid = make_grid(generated_images, nrow=5)
-    image_grid = (image_grid + 1) / 2  # Rescale from [-1, 1] to [0, 1]
+    image_grid = (image_grid + 1) / 2
     image_grid = (image_grid * 255).numpy().astype(np.uint8)
     image_grid = np.transpose(image_grid, (2, 1, 0))
     image = Image.fromarray(image_grid)
@@ -187,7 +214,8 @@ def main(args):
     generated_images = generate_images(generator, class_indices,
                                        device, img_size=args.img_size,
                                        output_dir=output_dir,
-                                       latent_dim=args.latent_dim,)
+                                       latent_dim=args.latent_dim,
+                                       classes_path=args.classes_path)
 
     # Save the results
     save_results(generated_images, output_dir)
