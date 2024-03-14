@@ -23,7 +23,7 @@ class Engine(LightningModule):
         self.dnn = dnn
         self.z_dim = z_dim
         self.lr = lr
-        self.num_classes = codebook_size
+        self.codebook_size = codebook_size
         self.num_classes = num_classes
         self.entrop_loss_weight = entropy_loss_weight
         self.diversity_gamma = diversity_gamma
@@ -107,7 +107,8 @@ class Engine(LightningModule):
 
         if not hasattr(self, 'reconstructed_images'):
             self.reconstructed_images = deque(maxlen=64)
-        self.reconstructed_images.append(out)
+            for i in range(64):
+                self.reconstructed_images.append(out[i].detach().cpu())
 
         # Log the validation loss
         self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -125,13 +126,15 @@ class Engine(LightningModule):
             f"Val_loss (mean): {val_loss_mean:.4f}"
         )
         self.val_loss.clear()
+        self.reconstructed_images.clear()
 
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
         image_path = os.path.join(
             image_dir, f"reconstructed_images_epoch_{self.current_epoch}.png")
         
-        reconstructed_images = torch.tensor(list(self.reconstructed_images)).permute(0, 1, 3, 2)
+        reconstructed_images = torch.stack(list(self.reconstructed_images))
+        reconstructed_images = reconstructed_images.view(-1, 1, 32, 32).permute(0, 1, 3, 2)
         grid = torchvision.utils.make_grid(
             reconstructed_images, nrow=5, normalize=True)
         save_image(grid, image_path)

@@ -15,7 +15,7 @@ cd extern; pip install -e vector-quantize-pytorch
 ### TODO
 
 - [ ] Upload trained checkpoint from server to GitHub
-- [+] Verify the test utility for cGAN
+- [x] Verify the test utility for cGAN
 - [ ] Implement a quantization mechanism for the cGAN
 - [ ] Implement a VQ-VAE
 - [ ] Use tensorrt and deploy the two models on a Jetson Nano

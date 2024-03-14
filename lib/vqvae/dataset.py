@@ -30,13 +30,14 @@ class CustomDataset(Dataset):
             self.size // self.num_classes).unsqueeze(1)
         if self.mode == "train":
             self.labels = self.labels[torch.randperm(
-                self.labels.size(0))]        
+                self.labels.size(0))]
 
     def __getitem__(self, idx):
-        noise = torch.randn(self.num_classes, self.z_dim) 
+        noise = torch.randn(1, self.z_dim, 1, 1)
         with torch.no_grad():
-            gen_img = self.generator(noise, self.labels[idx])
-
+            gen_img = self.generator(
+                noise, self.labels[idx]).squeeze(0)
+        
         return gen_img
 
     def __len__(self):
@@ -47,7 +48,7 @@ class GenEMNISTDataModule(LightningDataModule):
     def __init__(self, batch_size: int = 64, val_split: float = 0.2, 
                  num_workers: int = 4, num_classes: int = 47, 
                  train_size: int = 235000, test_size: int = 15000,
-                 generator: torch.nn.Module = None):
+                 generator: torch.nn.Module = None, z_dim: int = 64,):
         super().__init__()
         self.batch_size = batch_size
         self.val_split = val_split
@@ -56,17 +57,16 @@ class GenEMNISTDataModule(LightningDataModule):
         self.train_size = train_size
         self.test_size = test_size
         self.generator = generator
+        self.z_dim = z_dim
         
         self.train, self.val = random_split(
             CustomDataset(generator=self.generator, size=self.train_size, 
-                          num_classes=self.num_classes, mode="train", 
-                          z_dim=self.generator.z_dim),
+                          num_classes=self.num_classes, mode="train", z_dim=self.z_dim),
             [self.train_size - int(self.train_size * self.val_split),
              int(self.train_size * self.val_split)]
         )
         self.test = CustomDataset(generator=self.generator, size=self.test_size,
-                                  num_classes=self.num_classes, mode="test",
-                                  z_dim=self.generator.z_dim)
+                                  num_classes=self.num_classes, mode="test", z_dim=self.z_dim)
         
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.batch_size, shuffle=True,
