@@ -107,6 +107,7 @@ class Engine(LightningModule):
 
         if not hasattr(self, 'reconstructed_images'):
             self.reconstructed_images = deque(maxlen=64)
+        if len(self.reconstructed_images) == 0:
             for i in range(64):
                 self.reconstructed_images.append(out[i].detach().cpu())
 
