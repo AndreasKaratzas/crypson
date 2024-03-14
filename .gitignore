@@ -7,7 +7,9 @@ __pycache__/
 *.so
 
 # Data
-data/
+data/EMNIST/
+data/experiments/
+demo/results/
 lightning_logs/
 train/
 

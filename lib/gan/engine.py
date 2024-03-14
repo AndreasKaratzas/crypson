@@ -2,7 +2,6 @@
 import os
 import torch
 import wandb
-import numpy as np
 import torchvision
 
 from lightning.pytorch import LightningModule
