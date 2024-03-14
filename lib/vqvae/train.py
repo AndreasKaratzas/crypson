@@ -99,7 +99,7 @@ def main(args):
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
-    checkpoint_dirpath = os.path.join(args.output, 'DCGan')
+    checkpoint_dirpath = os.path.join(args.output, 'VQVae')
     progress_bar = CustomProgressBar()
     l_callbacks.append(progress_bar)
 

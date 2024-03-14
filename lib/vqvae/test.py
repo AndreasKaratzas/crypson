@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append('../../../')
+sys.path.append('../../')
 
 import os
 import torch
@@ -25,11 +25,11 @@ def main(args):
 
     # Load pretrained models
     # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
-    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
+    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels, num_classes=args.num_classes,
                               num_residual_layers=args.num_residual_layers, codebook_size=args.codebook_size,
                               latent_dim=args.latent_dim, num_codebooks=args.num_codebooks)
-    autoencoder.load_state_dict(
-        args.autoencoder.get('dnn'))
+    ckp = torch.load(args.autoencoder, map_location=device)
+    autoencoder.load_state_dict(ckp.get('dnn'))
     autoencoder.eval()
 
     ckp = torch.load(args.generator, map_location=device)
@@ -77,15 +77,15 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     # program level args
     parser.add_argument('--seed', default=33, type=int)
-    parser.add_argument('--output', default='train', type=str)
-    parser.add_argument('--experiment', default='VQVae', type=str)
     parser.add_argument('--batch-size', default=1, type=int)
-    parser.add_argument('--num-workers', default=1, type=int)
+    parser.add_argument('--val-split', default=0.2, type=float)
+    parser.add_argument('--lr', default=0.0002, type=float)
+    parser.add_argument('--num-workers', default=8, type=int)
     parser.add_argument('--num-classes', default=47, type=int)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--hidden-channels', default=128, type=int)
     parser.add_argument('--num-residual-layers', default=2, type=int)
-    parser.add_argument('--codebook-size', default=47, type=int)
+    parser.add_argument('--codebook-size', default=64, type=int)
     parser.add_argument('--latent-dim', default=8, type=int)
     parser.add_argument('--num-codebooks', default=4, type=int)
     parser.add_argument('--entropy-loss-weight', default=0.1, type=float)
@@ -94,7 +94,8 @@ if __name__ == '__main__':
     parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)
-    parser.add_argument('--test-size', default=15000, type=int)
+    parser.add_argument('--train-size', default=100, type=int)
+    parser.add_argument('--test-size', default=470, type=int)
     parser.add_argument('--resolution', default=32, type=int)
     parser.add_argument('--alias', type=str, default=None)
     parser.add_argument('--debug', action="store_true")

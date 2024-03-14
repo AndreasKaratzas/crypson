@@ -1,5 +1,6 @@
 
 import torch
+import numpy as np
 
 from lightning.pytorch import LightningDataModule
 
@@ -27,7 +28,7 @@ class CustomDataset(Dataset):
 
     def _setup_labels(self):
         self.labels = torch.arange(self.num_classes).repeat(
-            self.size // self.num_classes).unsqueeze(1)
+            int(np.ceil(self.size / self.num_classes))).unsqueeze(1)
         if self.mode == "train":
             self.labels = self.labels[torch.randperm(
                 self.labels.size(0))]

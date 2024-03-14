@@ -107,12 +107,36 @@ class Engine(LightningModule):
 
         if not hasattr(self, 'reconstructed_images'):
             self.reconstructed_images = deque(maxlen=64)
-        if len(self.reconstructed_images) == 0:
-            for i in range(64):
+
+        if len(self.reconstructed_images) < 64:
+            for i in range(64 - len(self.reconstructed_images)):
                 self.reconstructed_images.append(out[i].detach().cpu())
 
         # Log the validation loss
         self.log('val_loss', val_loss, on_step=False, on_epoch=True, prog_bar=True)
+
+    def test_step(self, batch, batch_idx):
+        """Test step.
+        Parameters
+        ----------
+        batch : tuple
+            Batch of real images and corresponding labels.
+        batch_idx : int
+            Batch index.
+        """
+        img = batch
+        
+        out, indices, entropy_aux_loss = self.dnn(img)
+        recon_loss = self.criterion(out, img)
+        test_loss = recon_loss + entropy_aux_loss
+
+        # Store the step losses in custom lists
+        if not hasattr(self, 'test_loss'):
+            self.test_loss = []
+        self.test_loss.append(test_loss.item())
+
+        # Log the test loss
+        self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         """Configure optimizers.
@@ -127,7 +151,6 @@ class Engine(LightningModule):
             f"Val_loss (mean): {val_loss_mean:.4f}"
         )
         self.val_loss.clear()
-        self.reconstructed_images.clear()
 
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
@@ -138,6 +161,7 @@ class Engine(LightningModule):
         reconstructed_images = reconstructed_images.view(-1, 1, 32, 32).permute(0, 1, 3, 2)
         grid = torchvision.utils.make_grid(
             reconstructed_images, nrow=5, normalize=True)
+        self.reconstructed_images.clear()
         save_image(grid, image_path)
         self.logger.experiment.add_image(
             "reconstructed_images", grid, global_step=self.global_step)
