@@ -17,7 +17,7 @@ from lib.vqvae.registry import CustomProgressBar
 from lib.vqvae.utils import get_elite
 
 
-def main(args):    
+def main(args):
     pl.seed_everything(args.seed)
     sys.path += [os.path.abspath(".."), os.path.abspath("."), os.path.abspath("../..")]
 
@@ -38,7 +38,7 @@ def main(args):
                 codebook_size=args.codebook_size,
                 entropy_loss_weight=args.entropy_loss_weight,
                 diversity_gamma=args.diversity_gamma)
-    
+
     # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
     generator = Generator(latent_dim=args.z_dim,
                           img_size=args.resolution,
@@ -48,9 +48,9 @@ def main(args):
 
     # DataModule
     # https://lightning.ai/docs/pytorch/stable/data/datamodule.html
-    dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split, 
-                             num_workers=args.num_workers, num_classes=args.num_classes, 
-                             generator=generator, train_size=args.train_size, 
+    dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split,
+                             num_workers=args.num_workers, num_classes=args.num_classes,
+                             generator=generator, train_size=args.train_size,
                              test_size=args.test_size,)
 
     # Callbacks
@@ -63,8 +63,8 @@ def main(args):
     trainer = pl.Trainer(accelerator='gpu', devices=args.gpus,
                         callbacks=l_callbacks,
                         logger=False)
-    
-    if args.debug:    
+
+    if args.debug:
         # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#inference
         trainer.test(lm, dm)
     else:
