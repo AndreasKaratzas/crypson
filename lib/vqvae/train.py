@@ -92,7 +92,7 @@ def main(args):
                           "DownEncoderBlock2D", "DownEncoderBlock2D"],
         up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D",
                         "UpDecoderBlock2D", "UpDecoderBlock2D"],
-        block_out_channels=[2, 4, 8, 16],
+        block_out_channels=[32, 32, 32, 32],
         latent_channels=4,
         sample_size=args.latent_dim,
     )
