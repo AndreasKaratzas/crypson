@@ -88,7 +88,6 @@ class AutoEncoder(nn.Module):
                               in_channels, num_residual_layers)
 
     def forward(self, x):
-        # print(f"In AutoEncoder.forward: x.shape = {x.shape}")
         x = self.encode(x)
         x, indices, entropy_aux_loss = self.quantize(x)
         x = self.decode(x)

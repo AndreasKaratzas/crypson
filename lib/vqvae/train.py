@@ -145,6 +145,7 @@ def main(args):
     # exit wandb -- https://github.com/Lightning-AI/lightning/issues/5212
     wandb.finish()
 
+
 if __name__ == '__main__':
     warnings.filterwarnings('ignore')
     
@@ -163,7 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-channels', default=128, type=int)
     parser.add_argument('--num-residual-layers', default=2, type=int)
     parser.add_argument('--codebook-size', type=int)
-    parser.add_argument('--latent-dim', default=8, type=int)
+    parser.add_argument('--latent-dim', default=4, type=int)
     parser.add_argument('--num-codebooks', default=4, type=int)
     parser.add_argument('--entropy-loss-weight', default=0.1, type=float)
     parser.add_argument('--diversity-gamma', default=1., type=float)

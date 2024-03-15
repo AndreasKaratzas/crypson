@@ -136,6 +136,7 @@ def main(args):
     # exit wandb -- https://github.com/Lightning-AI/lightning/issues/5212
     wandb.finish()
 
+
 if __name__ == '__main__':
     warnings.filterwarnings('ignore')
     
