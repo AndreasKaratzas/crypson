@@ -10,6 +10,7 @@ import torch
 import warnings
 import lightning.pytorch as pl
 
+from diffusers import AutoencoderKL
 from rich import print as rprint
 from rich.syntax import Syntax
 from argparse import ArgumentParser
@@ -84,6 +85,17 @@ def main(args):
     autoencoder = VAE(in_channels=1, hidden_channels=args.hidden_channels, 
                       num_layers=args.num_layers, latent_dim=args.latent_dim, 
                       img_size=args.resolution,)
+    autoencoder = AutoencoderKL(
+        in_channels=1,
+        out_channels=1,
+        down_block_types=["DownEncoderBlock2D", "DownEncoderBlock2D",
+                          "DownEncoderBlock2D", "DownEncoderBlock2D"],
+        up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D",
+                        "UpDecoderBlock2D", "UpDecoderBlock2D"],
+        block_out_channels=[128, 256, 512, 512],
+        latent_channels=4,
+        sample_size=args.latent_dim,
+    )
     lm = Engine(dnn=autoencoder, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
                 kl_w=args.kl_w, img_size=args.resolution)
     for n,p in lm.named_parameters():
