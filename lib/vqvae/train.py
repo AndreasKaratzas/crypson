@@ -92,9 +92,9 @@ def main(args):
                           "DownEncoderBlock2D", "DownEncoderBlock2D"],
         up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D",
                         "UpDecoderBlock2D", "UpDecoderBlock2D"],
-        block_out_channels=[4, 8, 8, 16],
+        block_out_channels=[2, 4, 8, 16],
         latent_channels=4,
-        sample_size=16,
+        sample_size=args.latent_dim,
     )
     lm = Engine(dnn=autoencoder, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
                 kl_w=args.kl_w, img_size=args.resolution)
