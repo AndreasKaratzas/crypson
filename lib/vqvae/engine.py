@@ -3,6 +3,7 @@ import os
 import torch
 import wandb
 import torchvision
+import torch.nn.functional as F
 
 from collections import deque
 from torchvision.utils import save_image
@@ -11,29 +12,21 @@ from lightning.pytorch import LightningModule
 
 class Engine(LightningModule):
 
-    def __init__(self, dnn, num_classes,
-                 z_dim=64, lr=0.0002,
-                 lnp=None, wandb_logger=None,
-                 codebook_size=2 ** 8, 
-                 entropy_loss_weight=0.02, 
-                 diversity_gamma=1.):
+    def __init__(self, dnn, lr=0.0002, img_size=32,
+                 lnp=None, wandb_logger=None, kl_w=0.5):
         super().__init__()
         self.save_hyperparameters(ignore=['dnn' 'lnp', 
                                           'wandb_logger', 'generator'])
         self.dnn = dnn
-        self.z_dim = z_dim
         self.lr = lr
-        self.codebook_size = codebook_size
-        self.num_classes = num_classes
-        self.entrop_loss_weight = entropy_loss_weight
-        self.diversity_gamma = diversity_gamma
-        self.criterion = torch.nn.MSELoss()
+        self.img_size = img_size
+        self.kl_w = kl_w
         self.lnp = lnp
         self.wandb_logger = wandb_logger
 
     def forward(self, img):
         return self.dnn(img)
-
+    
     def training_step(self, batch, batch_idx):
         """Training step.
         Parameters
@@ -45,43 +38,31 @@ class Engine(LightningModule):
         """
         img = batch
 
-        out, indices, entropy_aux_loss = self.dnn(img)
-        recon_loss = self.criterion(out, img)
-        loss = recon_loss + entropy_aux_loss
-
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='sum')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
+        
         self.log_dict(
-            {'recon_loss': recon_loss, 'entropy_aux_loss': entropy_aux_loss, 
-             'active_percentage': indices.unique().numel() / self.codebook_size * 100},
+            {'recon_loss': recon_loss,
+             'kl_loss': kl_loss,
+             'loss': loss},
             on_step=False, on_epoch=True, prog_bar=True)
 
         # Store the step losses in custom lists
-        if not hasattr(self, 'recon_losses'):
-            self.recon_losses = []
-        if not hasattr(self, 'entropy_aux_losses'):
-            self.entropy_aux_losses = []
-        if not hasattr(self, 'active_percentages'):
-            self.active_percentages = []
-        self.recon_losses.append(recon_loss.item())
-        self.entropy_aux_losses.append(entropy_aux_loss.item())
-        self.active_percentages.append(indices.unique().numel() / self.codebook_size * 100)
+        if not hasattr(self, 'losses'):
+            self.losses = []
+        self.losses.append(loss.item())
 
         # Log the epoch means
         if (batch_idx + 1) % self.trainer.num_training_batches == 0:
-            recon_loss_mean = sum(self.recon_losses) / len(self.recon_losses)
-            entropy_aux_loss_mean = sum(self.entropy_aux_losses) / len(self.entropy_aux_losses)
-            active_percentage_mean = sum(self.active_percentages) / len(self.active_percentages)
+            loss_mean = sum(self.losses) / len(self.losses)
             self.lnp.lnp(
                 f"Epoch [{self.current_epoch+1}/{self.trainer.max_epochs}] "
-                f"Recon_loss (mean): {recon_loss_mean:.4f}, "
-                f"Entropy_aux_loss (mean): {entropy_aux_loss_mean:.4f}"
-                f"Active %: {active_percentage_mean:.4f}"
+                f"Loss (mean): {loss_mean:.4f}"
             )
-            self.logger.experiment.add_scalar('recon_loss', recon_loss_mean, global_step=self.global_step)
-            self.logger.experiment.add_scalar('entropy_aux_loss', entropy_aux_loss_mean, global_step=self.global_step)
-            self.logger.experiment.add_scalar('active_percentage', active_percentage_mean, global_step=self.global_step)
-            self.recon_losses.clear()
-            self.entropy_aux_losses.clear()
-            self.active_percentages.clear()
+            self.logger.experiment.add_scalar('loss', loss_mean, global_step=self.global_step)
+            self.losses.clear()
 
         return loss
 
@@ -96,9 +77,10 @@ class Engine(LightningModule):
         """
         img = batch
         
-        out, indices, entropy_aux_loss = self.dnn(img)
-        recon_loss = self.criterion(out, img)
-        val_loss = recon_loss + entropy_aux_loss
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='sum')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        val_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
 
         # Store the step losses in custom lists
         if not hasattr(self, 'val_loss'):
@@ -126,9 +108,10 @@ class Engine(LightningModule):
         """
         img = batch
         
-        out, indices, entropy_aux_loss = self.dnn(img)
-        recon_loss = self.criterion(out, img)
-        test_loss = recon_loss + entropy_aux_loss
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='sum')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        test_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
 
         # Store the step losses in custom lists
         if not hasattr(self, 'test_loss'):
@@ -158,7 +141,8 @@ class Engine(LightningModule):
             image_dir, f"reconstructed_images_epoch_{self.current_epoch}.png")
         
         reconstructed_images = torch.stack(list(self.reconstructed_images))
-        reconstructed_images = reconstructed_images.view(-1, 1, 32, 32).permute(0, 1, 3, 2)
+        reconstructed_images = reconstructed_images.view(
+            -1, 1, self.img_size, self.img_size).permute(0, 1, 3, 2)
         grid = torchvision.utils.make_grid(
             reconstructed_images, nrow=5, normalize=True)
         self.reconstructed_images.clear()

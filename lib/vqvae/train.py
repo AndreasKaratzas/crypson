@@ -17,7 +17,7 @@ from argparse import ArgumentParser
 from lib.gan.modules import Generator
 from lib.vqvae.logger import Logger
 from lib.vqvae.engine import Engine
-from lib.vqvae.modules import AutoEncoder
+from lib.vqvae.modules import VAE
 from lib.vqvae.dataset import GenEMNISTDataModule
 from lib.vqvae.registry import CustomProgressBar
 from lib.vqvae.info import collect_env_details
@@ -81,14 +81,11 @@ def main(args):
     ckp = torch.load(args.generator, map_location=device)
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
-    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
-                              num_residual_layers=args.num_residual_layers, num_classes=args.num_classes,
-                              codebook_size=args.codebook_size, latent_dim=args.latent_dim,
-                              num_codebooks=args.num_codebooks)
-    lm = Engine(dnn=autoencoder, num_classes=args.num_classes,
-                z_dim=args.z_dim, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
-                codebook_size=args.codebook_size, entropy_loss_weight=args.entropy_loss_weight,
-                diversity_gamma=args.diversity_gamma)
+    autoencoder = VAE(in_channels=1, hidden_channels=args.hidden_channels, 
+                      num_layers=args.num_layers, latent_dim=args.latent_dim, 
+                      img_size=args.resolution,)
+    lm = Engine(dnn=autoencoder, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
+                kl_w=args.kl_w, img_size=args.resolution)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -161,13 +158,10 @@ if __name__ == '__main__':
     parser.add_argument('--num-epochs', default=10, type=int)
     parser.add_argument('--val-split', default=0.05, type=float)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
-    parser.add_argument('--hidden-channels', default=128, type=int)
-    parser.add_argument('--num-residual-layers', default=2, type=int)
-    parser.add_argument('--codebook-size', type=int)
-    parser.add_argument('--latent-dim', default=4, type=int)
-    parser.add_argument('--num-codebooks', default=4, type=int)
-    parser.add_argument('--entropy-loss-weight', default=0.1, type=float)
-    parser.add_argument('--diversity-gamma', default=1., type=float)
+    parser.add_argument('--hidden-channels', default=16, type=int)
+    parser.add_argument('--num-layers', default=8, type=int)
+    parser.add_argument('--latent-dim', default=8, type=int)
+    parser.add_argument('--kl-w', default=0.5, type=float)
     parser.add_argument('--generator', type=str)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)

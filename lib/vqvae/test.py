@@ -25,9 +25,10 @@ def main(args):
 
     # Load pretrained models
     # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
-    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels, num_classes=args.num_classes,
-                              num_residual_layers=args.num_residual_layers, codebook_size=args.codebook_size,
-                              latent_dim=args.latent_dim, num_codebooks=args.num_codebooks)
+    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
+                              num_residual_layers=args.num_residual_layers, num_classes=args.num_classes,
+                              codebook_size=args.codebook_size, latent_dim=args.latent_dim,
+                              num_codebooks=args.num_codebooks, img_size=args.resolution)
     ckp = torch.load(args.autoencoder, map_location=device)
     autoencoder.load_state_dict(ckp.get('dnn'))
     autoencoder.eval()

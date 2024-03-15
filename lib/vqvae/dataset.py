@@ -38,9 +38,8 @@ class CustomDataset(Dataset):
         with torch.no_grad():
             gen_img = self.generator(
                 noise, self.labels[idx]).squeeze(0)
+        return (gen_img - gen_img.min()) / (gen_img.max() - gen_img.min())
         
-        return gen_img
-
     def __len__(self):
         return self.size
 
