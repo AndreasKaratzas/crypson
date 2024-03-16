@@ -40,8 +40,8 @@ class Engine(LightningModule):
 
         latent = self.dnn.encode(img)
         latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        out = self.dnn.decode(latents).sample.clamp(0, 1)
+        recon_loss = F.cross_entropy(out, img, reduction='sum')
         kl_loss = latent.latent_dist.kl().mean()
         loss = recon_loss + kl_loss
 
@@ -91,8 +91,8 @@ class Engine(LightningModule):
         
         latent = self.dnn.encode(img)
         latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        out = self.dnn.decode(latents).sample.clamp(0, 1)
+        recon_loss = F.cross_entropy(out, img, reduction='sum')
         kl_loss = latent.latent_dist.kl().mean()
         val_loss = recon_loss + kl_loss
 
@@ -129,8 +129,8 @@ class Engine(LightningModule):
         
         latent = self.dnn.encode(img)
         latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        out = self.dnn.decode(latents).sample.clamp(0, 1)
+        recon_loss = F.cross_entropy(out, img, reduction='sum')
         kl_loss = latent.latent_dist.kl().mean()
         test_loss = recon_loss + kl_loss
 
