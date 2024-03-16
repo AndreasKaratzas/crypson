@@ -96,7 +96,7 @@ def main(args):
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
-    checkpoint_dirpath = os.path.join(args.output, 'VQVae')
+    checkpoint_dirpath = os.path.join(args.output, 'Vae')
     progress_bar = CustomProgressBar()
     l_callbacks.append(progress_bar)
 
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     # program level args
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--output', default='train', type=str)
-    parser.add_argument('--experiment', default='VQVae', type=str)
+    parser.add_argument('--experiment', default='Vae', type=str)
     parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
     parser.add_argument('--num-classes', default=47, type=int)
