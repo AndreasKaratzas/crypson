@@ -5,23 +5,23 @@ import torch.nn as nn
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels, out_channels, latent_dim, num_layers, img_size=32):
+    def __init__(self, in_channels, h_channels, latent_dim, 
+                 num_layers, img_size=32):
         super(Encoder, self).__init__()
 
         encoder_layers = []
-        for _ in range(num_layers):
+        h_channels = [in_channels] + h_channels
+        for i in range(num_layers):
             encoder_layers.append(
-                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1))
-            encoder_layers.append(nn.BatchNorm2d(out_channels))
+                nn.Conv2d(h_channels[i], h_channels[i+1], kernel_size=3, stride=2, padding=1))
+            encoder_layers.append(nn.BatchNorm2d(h_channels[i+1]))
             encoder_layers.append(nn.ReLU())
-            in_channels = out_channels
-            out_channels *= 2
         self.encoder = nn.Sequential(*encoder_layers)
 
         self.fc_mu = nn.Linear(
-            out_channels // 2 * (img_size // 2 ** num_layers) ** 2, latent_dim)
+            h_channels[-1] * (img_size // (2 ** num_layers)) ** 2, latent_dim)
         self.fc_log_var = nn.Linear(
-            out_channels // 2 * (img_size // 2 ** num_layers) ** 2, latent_dim)
+            h_channels[-1] * (img_size // (2 ** num_layers)) ** 2, latent_dim)
 
     def forward(self, x):
         x = self.encoder(x)
@@ -32,24 +32,25 @@ class Encoder(nn.Module):
     
 
 class Decoder(nn.Module):
-    def __init__(self, latent_dim, img_size, out_channels, num_layers):
+    def __init__(self, out_channels, h_channels, latent_dim,
+                 num_layers, img_size=32):
         super(Decoder, self).__init__()
         
+        h_channels = [out_channels] + h_channels
+        h_channels = h_channels[::-1]
         decoder_layers = []
-        out_channels = out_channels // 2
         decoder_layers.append(
-            nn.Linear(latent_dim, out_channels * (img_size // 2 ** num_layers) ** 2))
+            nn.Linear(latent_dim, h_channels[0] * (img_size // (2 ** num_layers)) ** 2))
         decoder_layers.append(nn.ReLU())
         decoder_layers.append(nn.Unflatten(
-            1, (out_channels, img_size // 2 ** num_layers, img_size // 2 ** num_layers)))
-        for _ in range(num_layers):
+            1, (h_channels[0], img_size // 2 ** num_layers, img_size // 2 ** num_layers)))
+        for i in range(num_layers):
             decoder_layers.append(nn.ConvTranspose2d(
-                out_channels, out_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=1))
-            decoder_layers.append(nn.BatchNorm2d(out_channels // 2))
+                h_channels[i], h_channels[i+1], kernel_size=3, stride=2, padding=1, output_padding=1))
+            decoder_layers.append(nn.BatchNorm2d(h_channels[i+1]))
             decoder_layers.append(nn.ReLU())
-            out_channels //= 2
         decoder_layers.append(
-            nn.Conv2d(out_channels, 1, kernel_size=3, padding=1))
+            nn.Conv2d(h_channels[-1], 1, kernel_size=3, padding=1))
         decoder_layers.append(nn.Sigmoid())
         self.decoder = nn.Sequential(*decoder_layers)
 
@@ -58,16 +59,19 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers, 
-                 latent_dim, img_size=32):
+    def __init__(self, in_channels, hidden_channels, 
+                 latent_dim=8, img_size=32):
         super(AutoEncoder, self).__init__()
 
-        self.encode = Encoder(in_channels=in_channels, out_channels=hidden_channels,
-                              latent_dim=latent_dim, num_layers=num_layers, img_size=img_size)
-        self.decode = Decoder(latent_dim=latent_dim, img_size=img_size,
-                              out_channels=hidden_channels, num_layers=num_layers)
+        self.encode = Encoder(in_channels=in_channels, h_channels=hidden_channels,
+                              latent_dim=latent_dim, num_layers=len(hidden_channels), img_size=img_size)
+        self.decode = Decoder(out_channels=in_channels, h_channels=hidden_channels,
+                              latent_dim=latent_dim, num_layers=len(hidden_channels), img_size=img_size)
 
         self._confirm_functionality(torch.randn(1, in_channels, img_size, img_size))
+
+    def _get_parameter_count(self):
+        return sum(p.numel() for p in self.parameters())
 
     def _confirm_functionality(self, x):
         mu, log_var = self.encode(x)
