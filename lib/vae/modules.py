@@ -58,7 +58,8 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers, latent_dim, img_size=32):
+    def __init__(self, in_channels, hidden_channels, num_layers, 
+                 latent_dim, img_size=32):
         super(AutoEncoder, self).__init__()
 
         self.encode = Encoder(in_channels=in_channels, out_channels=hidden_channels,
@@ -83,5 +84,6 @@ class AutoEncoder(nn.Module):
 
     def forward(self, x):
         mu, log_var = self.encode(x)
-        z = self.reparameterize(mu, log_var)
-        return self.decode(z), mu, log_var
+        if self.training:
+            z = self.reparameterize(mu, log_var)
+        return self.decode(z if self.training else mu), mu, log_var
