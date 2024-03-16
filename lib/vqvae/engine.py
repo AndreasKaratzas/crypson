@@ -39,9 +39,9 @@ class Engine(LightningModule):
         img = batch
 
         latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample() * 0.18215
+        latents = latent.latent_dist.sample()
         out = self.dnn.decode(latents).sample
-        recon_loss = torch.mean((img - out) ** 2)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
         kl_loss = latent.latent_dist.kl().mean()
         loss = recon_loss + kl_loss
 
@@ -90,9 +90,9 @@ class Engine(LightningModule):
         # val_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
         latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample() * 0.18215
+        latents = latent.latent_dist.sample()
         out = self.dnn.decode(latents).sample
-        recon_loss = torch.mean((img - out) ** 2)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
         kl_loss = latent.latent_dist.kl().mean()
         val_loss = recon_loss + kl_loss
 
@@ -128,9 +128,9 @@ class Engine(LightningModule):
         # test_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
         latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample() * 0.18215
+        latents = latent.latent_dist.sample()
         out = self.dnn.decode(latents).sample
-        recon_loss = torch.mean((img - out) ** 2)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
         kl_loss = latent.latent_dist.kl().mean()
         test_loss = recon_loss + kl_loss
 
