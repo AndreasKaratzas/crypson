@@ -57,9 +57,9 @@ class Decoder(nn.Module):
         return self.decoder(x)
 
 
-class VAE(nn.Module):
+class AutoEncoder(nn.Module):
     def __init__(self, in_channels, hidden_channels, num_layers, latent_dim, img_size=32):
-        super(VAE, self).__init__()
+        super(AutoEncoder, self).__init__()
 
         self.encode = Encoder(in_channels=in_channels, out_channels=hidden_channels,
                               latent_dim=latent_dim, num_layers=num_layers, img_size=img_size)

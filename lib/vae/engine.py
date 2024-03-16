@@ -37,18 +37,11 @@ class Engine(LightningModule):
             Batch index.
         """
         img = batch
-
-        latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.cross_entropy(out, img, reduction='sum')
-        kl_loss = latent.latent_dist.kl().mean()
-        loss = recon_loss + kl_loss
-
-        # out, mu, log_var = self(img)
-        # recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
-        # kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        # loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
+        
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
         self.log_dict(
             {'recon_loss': recon_loss,
@@ -84,18 +77,11 @@ class Engine(LightningModule):
         """
         img = batch
         
-        # out, mu, log_var = self(img)
-        # recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
-        # kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        # val_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        val_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
-        latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.cross_entropy(out, img, reduction='sum')
-        kl_loss = latent.latent_dist.kl().mean()
-        val_loss = recon_loss + kl_loss
-
         # Store the step losses in custom lists
         if not hasattr(self, 'val_loss'):
             self.val_loss = []
@@ -122,18 +108,11 @@ class Engine(LightningModule):
         """
         img = batch
         
-        # out, mu, log_var = self(img)
-        # recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
-        # kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-        # test_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
+        out, mu, log_var = self(img)
+        recon_loss = F.binary_cross_entropy(out, img, reduction='mean')
+        kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        test_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
-        latent = self.dnn.encode(img)
-        latents = latent.latent_dist.sample()
-        out = self.dnn.decode(latents).sample
-        recon_loss = F.cross_entropy(out, img, reduction='sum')
-        kl_loss = latent.latent_dist.kl().mean()
-        test_loss = recon_loss + kl_loss
-
         # Store the step losses in custom lists
         if not hasattr(self, 'test_loss'):
             self.test_loss = []

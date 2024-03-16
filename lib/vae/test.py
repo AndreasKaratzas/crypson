@@ -10,11 +10,11 @@ import lightning.pytorch as pl
 from argparse import ArgumentParser
 
 from lib.gan.modules import Generator
-from lib.vqvae.engine import Engine
-from lib.vqvae.modules import AutoEncoder
-from lib.vqvae.dataset import GenEMNISTDataModule
-from lib.vqvae.registry import CustomProgressBar
-from lib.vqvae.utils import get_elite
+from lib.vae.engine import Engine
+from lib.vae.modules import AutoEncoder
+from lib.vae.dataset import GenEMNISTDataModule
+from lib.vae.registry import CustomProgressBar
+from lib.vae.utils import get_elite
 
 
 def main(args):
@@ -26,19 +26,15 @@ def main(args):
     # Load pretrained models
     # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
     autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
-                              num_residual_layers=args.num_residual_layers, num_classes=args.num_classes,
-                              codebook_size=args.codebook_size, latent_dim=args.latent_dim,
-                              num_codebooks=args.num_codebooks, img_size=args.resolution)
+                              num_layers=args.num_layers, latent_dim=args.latent_dim,
+                              img_size=args.resolution,)
     ckp = torch.load(args.autoencoder, map_location=device)
     autoencoder.load_state_dict(ckp.get('dnn'))
     autoencoder.eval()
 
     ckp = torch.load(args.generator, map_location=device)
-    lm = Engine(dnn=autoencoder, num_classes=args.num_classes,
-                z_dim=args.z_dim, lr=args.lr,
-                codebook_size=args.codebook_size,
-                entropy_loss_weight=args.entropy_loss_weight,
-                diversity_gamma=args.diversity_gamma)
+    lm = Engine(dnn=autoencoder, lr=args.lr,
+                kl_w=args.kl_w, img_size=args.resolution)
 
     # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
     generator = Generator(latent_dim=args.z_dim,
@@ -86,12 +82,9 @@ if __name__ == '__main__':
     parser.add_argument('--num-classes', default=47, type=int)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--hidden-channels', default=128, type=int)
-    parser.add_argument('--num-residual-layers', default=2, type=int)
-    parser.add_argument('--codebook-size', default=64, type=int)
+    parser.add_argument('--num-layers', default=2, type=int)
     parser.add_argument('--latent-dim', default=4, type=int)
-    parser.add_argument('--num-codebooks', default=4, type=int)
-    parser.add_argument('--entropy-loss-weight', default=0.1, type=float)
-    parser.add_argument('--diversity-gamma', default=1., type=float)
+    parser.add_argument('--kl-w', default=0.5, type=float)
     parser.add_argument('--generator', type=str)
     parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--resume', action="store_true")

@@ -10,19 +10,18 @@ import torch
 import warnings
 import lightning.pytorch as pl
 
-from diffusers import AutoencoderKL
 from rich import print as rprint
 from rich.syntax import Syntax
 from argparse import ArgumentParser
 
 from lib.gan.modules import Generator
-from lib.vqvae.logger import Logger
-from lib.vqvae.engine import Engine
-from lib.vqvae.modules import VAE
-from lib.vqvae.dataset import GenEMNISTDataModule
-from lib.vqvae.registry import CustomProgressBar
-from lib.vqvae.info import collect_env_details
-from lib.vqvae.utils import get_elite
+from lib.vae.logger import Logger
+from lib.vae.engine import Engine
+from lib.vae.modules import AutoEncoder
+from lib.vae.dataset import GenEMNISTDataModule
+from lib.vae.registry import CustomProgressBar
+from lib.vae.info import collect_env_details
+from lib.vae.utils import get_elite
 
 
 def main(args):
@@ -82,20 +81,9 @@ def main(args):
     ckp = torch.load(args.generator, map_location=device)
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
-    autoencoder = VAE(in_channels=1, hidden_channels=args.hidden_channels, 
+    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels, 
                       num_layers=args.num_layers, latent_dim=args.latent_dim, 
                       img_size=args.resolution,)
-    autoencoder = AutoencoderKL(
-        in_channels=1,
-        out_channels=1,
-        down_block_types=["DownEncoderBlock2D", "DownEncoderBlock2D",
-                          "DownEncoderBlock2D", "DownEncoderBlock2D"],
-        up_block_types=["UpDecoderBlock2D", "UpDecoderBlock2D",
-                        "UpDecoderBlock2D", "UpDecoderBlock2D"],
-        block_out_channels=[32, 32, 32, 32],
-        latent_channels=4,
-        sample_size=args.latent_dim,
-    )
     lm = Engine(dnn=autoencoder, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
                 kl_w=args.kl_w, img_size=args.resolution)
     for n,p in lm.named_parameters():
