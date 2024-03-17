@@ -90,7 +90,7 @@ def main(args):
     generator.eval()
 
     classifier = Classifier(in_dim=args.latent_dim, num_classes=args.num_classes,)
-    lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,)
+    lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp,)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)
-    parser.add_argument('--lr', default=0.0002, type=float)
+    parser.add_argument('--lr', default=1e-3, type=float)
     parser.add_argument('--train-size', default=235000, type=int)
     parser.add_argument('--test-size', default=15000, type=int)
     parser.add_argument('--resolution', default=32, type=int)

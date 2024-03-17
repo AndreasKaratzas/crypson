@@ -1,12 +1,7 @@
 
-import os
 import torch
-import wandb
-import torchvision
 import torch.nn as nn
-import torch.nn.functional as F
 
-from collections import deque
 from torchmetrics import ConfusionMatrix, Accuracy
 from lightning.pytorch import LightningModule
 
@@ -14,19 +9,21 @@ from lightning.pytorch import LightningModule
 class Engine(LightningModule):
 
     def __init__(self, classifier, lr=1e-3,
-                 lnp=None, wandb_logger=None,
-                 num_classes=47, ):
+                 lnp=None, num_classes=47,):
         super().__init__()
-        self.save_hyperparameters(ignore=['classifier' 'lnp', 'wandb_logger', ])
+        self.save_hyperparameters(ignore=['classifier' 'lnp', ])
         self.classifier = classifier
         self.lr = lr
         self.lnp = lnp
         self.criterion = nn.CrossEntropyLoss()
-        self.train_acc = Accuracy(num_classes=num_classes)
-        self.val_acc = Accuracy(num_classes=num_classes)
-        self.test_acc = Accuracy(num_classes=num_classes)
-        self.test_cm = ConfusionMatrix(num_classes=num_classes)
-        self.wandb_logger = wandb_logger
+        self.train_acc = Accuracy(
+            num_classes=num_classes, task="multiclass", top_k=1)
+        self.val_acc = Accuracy(
+            num_classes=num_classes, task="multiclass", top_k=1)
+        self.test_acc = Accuracy(
+            num_classes=num_classes, task="multiclass", top_k=1)
+        self.test_cm = ConfusionMatrix(
+            num_classes=num_classes, task="multiclass")
 
     def forward(self, latents):
         return self.classifier(latents)
