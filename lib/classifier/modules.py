@@ -10,16 +10,17 @@ class Classifier(nn.Module):
                  img_size=32, num_classes: int = 47, dropout_rate=0.2):
         super(Classifier, self).__init__()
 
+        num_layers = len(h_channels)
         h_channels = [1] + h_channels
         h_channels = h_channels[::-1]
 
         features = []
         features.append(
-            nn.Linear(in_dim, h_channels[0] * (img_size // (2 ** len(h_channels))) ** 2))
+            nn.Linear(in_dim, h_channels[0] * (img_size // (2 ** num_layers)) ** 2))
         features.append(nn.ReLU())
         features.append(nn.Unflatten(
-            1, (h_channels[0], img_size // 2 ** len(h_channels), img_size // 2 ** len(h_channels))))
-        for i in range(len(h_channels)):
+            1, (h_channels[0], img_size // 2 ** num_layers, img_size // 2 ** num_layers)))
+        for i in range(num_layers):
             features.append(nn.ConvTranspose2d(
                 h_channels[i], h_channels[i+1], kernel_size=3, stride=2, padding=1, output_padding=1))
             features.append(nn.BatchNorm2d(h_channels[i+1]))
@@ -38,7 +39,7 @@ class Classifier(nn.Module):
         features.append(nn.Softmax(dim=1))
         self.features = nn.Sequential(*features)
 
-        for param in self.features[:(3 + (2 * len(h_channels)) + 2)].parameters():
+        for param in self.features[:(3 + (2 * num_layers) + 2)].parameters():
             print(f'param: {param}')
             param.requires_grad = False
 
