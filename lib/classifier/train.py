@@ -15,13 +15,14 @@ from rich.syntax import Syntax
 from argparse import ArgumentParser
 
 from lib.gan.modules import Generator
-from lib.vae.logger import Logger
-from lib.vae.engine import Engine
 from lib.vae.modules import AutoEncoder
-from lib.vae.dataset import GenEMNISTDataModule
-from lib.vae.registry import CustomProgressBar
-from lib.vae.info import collect_env_details
-from lib.vae.utils import get_elite
+from lib.classifier.logger import Logger
+from lib.classifier.engine import Engine
+from lib.classifier.modules import Classifier
+from lib.classifier.dataset import GenEMNISTDataModule
+from lib.classifier.registry import CustomProgressBar
+from lib.classifier.info import collect_env_details
+from lib.classifier.utils import get_elite
 
 
 def main(args):
@@ -75,16 +76,21 @@ def main(args):
     # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html
     # ------------
     lnp.lnp('MAIN LightningModule')
-    generator = Generator(latent_dim=args.z_dim, 
-                          img_size=args.resolution, 
+    # Load pretrained models
+    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
+                              latent_dim=args.latent_dim, img_size=args.resolution,)
+    ckp = torch.load(args.autoencoder, map_location=device)
+    autoencoder.load_state_dict(ckp.get('vae'))
+    autoencoder.eval()
+
+    generator = Generator(latent_dim=args.z_dim, img_size=args.resolution,
                           num_classes=args.num_classes)
     ckp = torch.load(args.generator, map_location=device)
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
-    autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
-                              latent_dim=args.latent_dim, img_size=args.resolution,)
-    lm = Engine(vae=autoencoder, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,
-                kl_w=args.kl_w, img_size=args.resolution)
+
+    classifier = Classifier(in_dim=args.latent_dim, num_classes=args.num_classes,)
+    lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger,)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 
@@ -95,7 +101,7 @@ def main(args):
 
     # model checkpoint
     # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
-    checkpoint_dirpath = os.path.join(args.output, 'Vae')
+    checkpoint_dirpath = os.path.join(args.output, 'Classifier')
     progress_bar = CustomProgressBar()
     l_callbacks.append(progress_bar)
 
@@ -105,19 +111,19 @@ def main(args):
             best_checkpoint = get_elite(os.listdir(checkpoint_dirpath))
             if os.path.exists(os.path.join(checkpoint_dirpath, best_checkpoint)):
                 ckp = torch.load(os.path.join(checkpoint_dirpath, best_checkpoint), map_location=device)
-                lm.dnn.load_state_dict(ckp.get('dnn'))
+                lm.classifier.load_state_dict(ckp.get('classifier'))
             else:
                 print(f'No checkpoint found at {os.path.join(checkpoint_dirpath, best_checkpoint)}')
         else:
             ckp = torch.load(args.ckpt_path, map_location=device)
-            lm.dnn.load_state_dict(ckp.get('dnn'))
+            lm.classifier.load_state_dict(ckp.get('classifier'))
 
     cbModelCheckpoint = pl.callbacks.ModelCheckpoint(
         save_top_k=10,
-        monitor="val_loss",
+        monitor="val_accuracy",
         mode="min",
         dirpath=checkpoint_dirpath,
-        filename="epoch_{epoch:05d}-loss_{val_loss:.5f}",
+        filename="epoch_{epoch:05d}-loss_{val_accuracy:.5f}",
         auto_insert_metric_name=False,
         save_last=True,)
     l_callbacks.append(cbModelCheckpoint)
@@ -132,7 +138,8 @@ def main(args):
     dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split, 
                              num_workers=args.num_workers, num_classes=args.num_classes, 
                              generator=generator, train_size=args.train_size, 
-                             test_size=args.test_size, z_dim=args.z_dim,)
+                             test_size=args.test_size, z_dim=args.z_dim,
+                             autoencoder=autoencoder,)
 
     # fit
     lnp.lnp('MAIN fit')
@@ -150,7 +157,7 @@ if __name__ == '__main__':
     # program level args
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--output', default='train', type=str)
-    parser.add_argument('--experiment', default='Vae', type=str)
+    parser.add_argument('--experiment', default='Classifier', type=str)
     parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
     parser.add_argument('--num-classes', default=47, type=int)
@@ -159,8 +166,8 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--hidden-channels', nargs='+', default=[16, 32, 32, 64], type=int)
     parser.add_argument('--latent-dim', default=8, type=int)
-    parser.add_argument('--kl-w', default=0.5, type=float)
     parser.add_argument('--generator', type=str)
+    parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)
     parser.add_argument('--lr', default=0.0002, type=float)

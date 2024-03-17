@@ -10,11 +10,12 @@ import lightning.pytorch as pl
 from argparse import ArgumentParser
 
 from lib.gan.modules import Generator
-from lib.vae.engine import Engine
 from lib.vae.modules import AutoEncoder
-from lib.vae.dataset import GenEMNISTDataModule
-from lib.vae.registry import CustomProgressBar
-from lib.vae.utils import get_elite
+from lib.classifier.modules import Classifier
+from lib.classifier.engine import Engine
+from lib.classifier.dataset import GenEMNISTDataModule
+from lib.classifier.registry import CustomProgressBar
+from lib.classifier.utils import get_elite
 
 
 def main(args):
@@ -28,26 +29,30 @@ def main(args):
     autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
                               latent_dim=args.latent_dim, img_size=args.resolution,)
     ckp = torch.load(args.autoencoder, map_location=device)
-    autoencoder.load_state_dict(ckp.get('dnn'))
+    autoencoder.load_state_dict(ckp.get('vae'))
     autoencoder.eval()
 
-    ckp = torch.load(args.generator, map_location=device)
-    lm = Engine(vae=autoencoder, lr=args.lr,
-                kl_w=args.kl_w, img_size=args.resolution)
-
-    # TODO: Use the `args.resume` argument with `get_elite` to load the best checkpoint
-    generator = Generator(latent_dim=args.z_dim,
-                          img_size=args.resolution,
+    generator = Generator(latent_dim=args.z_dim, img_size=args.resolution,
                           num_classes=args.num_classes)
+    ckp = torch.load(args.generator, map_location=device)
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
+
+    classifier = Classifier(in_dim=args.latent_dim,
+                            num_classes=args.num_classes,)
+    ckp = torch.load(args.classifier, map_location=device)
+    classifier.load_state_dict(ckp.get('classifier'))
+    classifier.eval()
+
+    lm = Engine(classifier=classifier, lr=args.lr,)
 
     # DataModule
     # https://lightning.ai/docs/pytorch/stable/data/datamodule.html
     dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split,
                              num_workers=args.num_workers, num_classes=args.num_classes,
                              generator=generator, train_size=args.train_size,
-                             test_size=args.test_size,)
+                             test_size=args.test_size, z_dim=args.z_dim,
+                             autoencoder=autoencoder,)
 
     # Callbacks
     # https://pytorch-lightning.readthedocs.io/en/latest/extensions/callbacks.html
@@ -82,9 +87,9 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('--hidden-channels', nargs='+', default=[16, 32, 32, 64], type=int)
     parser.add_argument('--latent-dim', default=8, type=int)
-    parser.add_argument('--kl-w', default=0.5, type=float)
     parser.add_argument('--generator', type=str)
     parser.add_argument('--autoencoder', type=str)
+    parser.add_argument('--classifier', type=str)
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)
     parser.add_argument('--train-size', default=100, type=int)

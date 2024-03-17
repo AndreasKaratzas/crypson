@@ -12,12 +12,12 @@ from lightning.pytorch import LightningModule
 
 class Engine(LightningModule):
 
-    def __init__(self, dnn, lr=0.0002, img_size=32,
+    def __init__(self, vae, lr=0.0002, img_size=32,
                  lnp=None, wandb_logger=None, kl_w=0.5):
         super().__init__()
-        self.save_hyperparameters(ignore=['dnn' 'lnp', 
+        self.save_hyperparameters(ignore=['vae' 'lnp',
                                           'wandb_logger', 'generator'])
-        self.dnn = dnn
+        self.vae = vae
         self.lr = lr
         self.img_size = img_size
         self.kl_w = kl_w
@@ -25,7 +25,7 @@ class Engine(LightningModule):
         self.wandb_logger = wandb_logger
 
     def forward(self, img):
-        return self.dnn(img)
+        return self.vae(img)
     
     def training_step(self, batch, batch_idx):
         """Training step.
@@ -113,18 +113,13 @@ class Engine(LightningModule):
         kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
         test_loss = ((1 - self.kl_w) * recon_loss) + ((self.kl_w) * kl_loss)
         
-        # Store the step losses in custom lists
-        if not hasattr(self, 'test_loss'):
-            self.test_loss = []
-        self.test_loss.append(test_loss.item())
-
         # Log the test loss
         self.log('test_loss', test_loss, on_step=False, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
         """Configure optimizers.
         """
-        optimizer = torch.optim.AdamW(self.dnn.parameters(), lr=3e-4)
+        optimizer = torch.optim.AdamW(self.vae.parameters(), lr=3e-4)
         return optimizer
 
     def on_validation_epoch_end(self):
@@ -167,7 +162,7 @@ class Engine(LightningModule):
         dict
             Updated checkpoint dictionary.
         """
-        checkpoint['dnn'] = self.dnn.state_dict()
+        checkpoint['vae'] = self.vae.state_dict()
         return checkpoint
 
     def on_load_checkpoint(self, checkpoint):
@@ -183,5 +178,5 @@ class Engine(LightningModule):
         dict
             Updated checkpoint dictionary.
         """
-        self.dnn.load_state_dict(checkpoint['dnn'])
+        self.vae.load_state_dict(checkpoint['vae'])
         return checkpoint
