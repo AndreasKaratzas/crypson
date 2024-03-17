@@ -28,7 +28,7 @@ def main(args):
     autoencoder = AutoEncoder(in_channels=1, hidden_channels=args.hidden_channels,
                               latent_dim=args.latent_dim, img_size=args.resolution,)
     ckp = torch.load(args.autoencoder, map_location=device)
-    autoencoder.load_state_dict(ckp.get('dnn'))
+    autoencoder.load_state_dict(ckp.get('vae'))
     autoencoder.eval()
 
     ckp = torch.load(args.generator, map_location=device)
@@ -44,10 +44,10 @@ def main(args):
 
     # DataModule
     # https://lightning.ai/docs/pytorch/stable/data/datamodule.html
-    dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split,
-                             num_workers=args.num_workers, num_classes=args.num_classes,
-                             generator=generator, train_size=args.train_size,
-                             test_size=args.test_size,)
+    dm = GenEMNISTDataModule(batch_size=args.batch_size, val_split=args.val_split, 
+                             num_workers=args.num_workers, num_classes=args.num_classes, 
+                             generator=generator, train_size=args.train_size, 
+                             test_size=args.test_size, z_dim=args.z_dim,)
 
     # Callbacks
     # https://pytorch-lightning.readthedocs.io/en/latest/extensions/callbacks.html

@@ -254,6 +254,7 @@ def main(args):
 
     # Set the output directory
     output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
 
     # Set the device (CPU or GPU)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
