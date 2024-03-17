@@ -1,6 +1,6 @@
 # Crypson
 
-This work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is a peer-to-peer encryption framework that uses a conditional Generative Adversarial Network (cGAN) to generate images from a sequence of letters, a Variational Auto-Encoder (VAE) to compress the images into a latent space, and a classifier to predict the class of the received samples. The framework is designed to be secure, scalable, and efficient. The security of the framework is achieved by using a time embedding to mask the latent space, making it near-impervious to deciphering. The scalability of the framework is achieved by using a VAE to compress the images into a latent space, making it cheaper for the source peer to send it to the target peer. The efficiency of the framework is achieved by using a classifier to predict the class of the received samples, making it cheaper for the target peer to decrypt the data. The framework is evaluated on the EMNIST dataset and achieves a classification accuracy of 90.07%.
+This work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is a peer-to-peer encryption framework that uses a conditional Generative Adversarial Network (cGAN) to generate images from a sequence of letters, a Variational Auto-Encoder (VAE) to compress the images into a latent space, and a classifier to predict the class of the received samples. The framework is designed to be secure, scalable, and efficient. The security of the framework is achieved by using a time embedding to mask the latent space, making it near-impervious to deciphering. The scalability of the framework is achieved by using a VAE to compress the images into a latent space, making it cheaper for the source peer to send it to the target peer. The efficiency of the framework is achieved by using a classifier to predict the class of the received samples, making it cheaper for the target peer to decrypt the data. The framework is evaluated on the EMNIST dataset and achieves a classification accuracy of 90.77%.
 
 
 ### The Encoder
@@ -85,7 +85,7 @@ Training progress stats of the cGAN:
     <tr>
         <td width="35%"><img src="docs/g_loss-cgan.svg" alt="Generator cGAN training loss"></td>
         <td width="35%"><img src="docs/d_loss-cgan.svg" alt="Discriminator cGAN training loss"></td>
-        <td width="30%" rowspan="2"><img src="docs/recon_demo-cgan.png" alt="Generated cGAN samples"></td>
+        <td width="30%" rowspan="2"><img src="docs/recon_demo-cgan.png" alt="Generated cGAN samples" width="100%"></td>
     </tr>
     <tr>
         <td colspan="2"><img src="docs/val_loss-cgan.svg" alt="cGAN validation loss"></td>
@@ -97,7 +97,7 @@ Training progress stats of the VAE:
     <tr>
         <td width="35%"><img src="docs/train_loss-clf.svg" alt="VAE training loss"></td>
         <td width="35%"><img src="docs/train_kl_loss-vae.svg" alt="VAE Kullback Leibler Divergence"></td>
-        <td width="30%" rowspan="2"><img src="docs/recon_demo-vae.png" alt="Reconstructed VAE samples"></td>
+        <td width="30%" rowspan="2"><img src="docs/recon_demo-vae.png" alt="Reconstructed VAE samples" width="100%"></td>
     </tr>
     <tr>
         <td><img src="docs/train_recon_loss-vae.svg" alt="VAE training reconstruction loss"></td>
@@ -111,7 +111,7 @@ Training progress stats of the classifier:
     <tr>
         <td width="30%"><img src="docs/train_loss-clf.svg" alt="Classifier training loss"></td>
         <td width="30%"><img src="docs/train_acc-clf.svg" alt="Classifier training accuracy"></td>
-        <td width="40%" rowspan="2"><img src="docs/confusion_matrix.png" alt="Confusion matrix of the classifier"></td>
+        <td width="40%" rowspan="2"><img src="docs/confusion_matrix.png" alt="Confusion matrix of the classifier" width="100%"></td>
     </tr>
     <tr>
         <td><img src="docs/val_loss-clf.svg" alt="Classifier validation loss"></td>
