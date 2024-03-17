@@ -41,7 +41,7 @@ class Classifier(nn.Module):
         self.features = nn.Sequential(*features)
 
         for i, module in enumerate(self.features[:(3 + (3 * num_layers) + 2)]):
-            print(f"Freezing module {i}: {module.__class__.__name__}")
+            # print(f"Freezing module {i}: {module.__class__.__name__}")
             for param in module.parameters():
                 param.requires_grad = False
 
