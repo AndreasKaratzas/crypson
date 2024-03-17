@@ -1,4 +1,4 @@
-name: atten
+name: crypson
 channels:
   - pytorch
   - nvidia
@@ -163,4 +163,4 @@ dependencies:
     - wandb==0.16.4
     - werkzeug==3.0.1
     - zipp==3.18.1
-prefix: /home/andreas/anaconda3/envs/atten
+prefix: ~/anaconda3/envs/crypson
