@@ -38,9 +38,10 @@ class CustomDataset(Dataset):
         noise = torch.randn(1, self.z_dim, 1, 1)
         with torch.no_grad():
             gen_img = self.generator(
-                noise, self.labels[idx]).squeeze(0)
+                noise, self.labels[idx])
         gen_img = (gen_img - gen_img.min()) / (gen_img.max() - gen_img.min())
         mu, _ = self.autoencoder.encode(gen_img)
+        print(mu.shape, self.labels[idx].shape)
         return mu, self.labels[idx]
         
     def __len__(self):
