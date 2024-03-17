@@ -186,7 +186,7 @@ class Engine(LightningModule):
         image_dir = os.path.join(self.trainer.log_dir, "images")
         os.makedirs(image_dir, exist_ok=True)
         image_path = os.path.join(
-            image_dir, f"f'confusion_matrix_epoch_{self.current_epoch}.png")
+            image_dir, f"confusion_matrix.png")
 
         # Save the confusion matrix as an image
         plt.tight_layout()
