@@ -2,12 +2,19 @@
 
 With the recent advancements in artificial intelligence, modern neural networks are being deployed to address a wide variety of tasks. One field that has shown interest in applying neural networks is cryptography. Specifically, there are challenges that come with the advancement of computing systems, particularly quantum computing systems, that threaten to break classical encryption techniques. However, neural networks aim to overcome this challenge.
 
-Neural networks are characterized by properties such as a non-linear relationship between input and output, complexity in architecture, and the ability for life-long learning. Cryptography can capitalize on these properties to build frameworks that are near-impossible to crack due to their complexity and successfully address the aforementioned challenges. To that end, this work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is split in 2 parts:
-- __The Encoder__: First, the encoder takes in a sequence of words, i.e., data stream. Then, it tokenizes this sequence of words into letters, formulating a sequence of letters $l_{k}, \; k \in {0, N}$. For each letter, the source peer initializes a random matrix. This matrix is used as a reference point for the generative model (conditional GAN) to compile an image that is going to represent the letter. After generating the image, I use a Variational Auto-Encoder (VAE). This will transpose the pixel features into a compressed and rich latent form. This is a crucial step in order to keep the computational burden of sending the data over the network a cheap operation. The resulting latent vector (_feature embedding_ in the encoder methodology figure) is going to be summed with a time embedding, which is a vector of equal length used to mask the latent space, thus making it near-impervious to deciphering it. This creates our encrypted vector $k$.
+Neural networks are characterized by properties such as a non-linear relationship between input and output, complexity in architecture, and the ability for life-long learning. Cryptography can capitalize on these properties to build frameworks that are near-impossible to crack due to their complexity and successfully address the aforementioned challenges. To that end, this work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is a peer-to-peer encryption framework that uses a conditional Generative Adversarial Network (cGAN) to generate images from a sequence of letters, a Variational Auto-Encoder (VAE) to compress the images into a latent space, and a classifier to predict the class of the received samples. The framework is designed to be secure, scalable, and efficient. The security of the framework is achieved by using a time embedding to mask the latent space, making it near-impervious to deciphering. The scalability of the framework is achieved by using a VAE to compress the images into a latent space, making it cheaper for the source peer to send it to the target peer. The efficiency of the framework is achieved by using a classifier to predict the class of the received samples, making it cheaper for the target peer to decrypt the data. The framework is evaluated on the EMNIST dataset and achieves a classification accuracy of 90.07%.
+
+
+### The Encoder
+
+First, the encoder takes in a sequence of words, i.e., data stream. Then, it tokenizes this sequence of words into letters, formulating a sequence of letters $l_{k}, \; k \in {0, N}$. For each letter, the source peer initializes a random matrix. This matrix is used as a reference point for the generative model (conditional GAN) to compile an image that is going to represent the letter. After generating the image, I use a Variational Auto-Encoder (VAE). This will transpose the pixel features into a compressed and rich latent form. This is a crucial step in order to keep the computational burden of sending the data over the network a cheap operation. The resulting latent vector (_feature embedding_ in the encoder methodology figure) is going to be summed with a time embedding, which is a vector of equal length used to mask the latent space, thus making it near-impervious to deciphering it. This creates our encrypted vector $k$.
 
 ![Encoder methodology](docs/encoder-source_peer-crypson-methodology.png)
 
-- __The Decoder__: The first step in the decoder is unmasking the latent vector by subtracting the time embedding. This is feasible since the function for generating the time embedding is common between the source and target peers. Next, we will be using the decoder module of the trained VAE to initialize a classifier and transpose the latent features back to classes, i.e., machine-readable letters $k$.
+
+### The Decoder
+
+The first step in the decoder is unmasking the latent vector by subtracting the time embedding. This is feasible since the function for generating the time embedding is common between the source and target peers. Next, we will be using the decoder module of the trained VAE to initialize a classifier and transpose the latent features back to classes, i.e., machine-readable letters $k$.
 
 ![Decoder methodology](docs/decoder-target_peer-crypson-methodology.png)
 
@@ -72,26 +79,47 @@ python test.py --batch-size 128 --num-workers 8 --generator '../../checkpoints/g
 ```
 The test utility also compiles a confusion matrix.
 
+
 ### Results
 
 Training progress stats of the cGAN:
-| ![Generator cGAN training loss](docs/g_loss-cgan.svg) | ![Discriminator cGAN training loss](docs/d_loss-cgan.svg) |
-|:--|:--|
-| ![cGAN validation loss](docs/val_loss-cgan.svg) | ![Generated cGAN samples](docs/recon_demo-cgan.png) |
+<table>
+    <tr>
+        <td width="35%"><img src="docs/g_loss-cgan.svg" alt="Generator cGAN training loss"></td>
+        <td width="35%"><img src="docs/d_loss-cgan.svg" alt="Discriminator cGAN training loss"></td>
+        <td width="30%" rowspan="2"><img src="docs/recon_demo-cgan.png" alt="Generated cGAN samples"></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="docs/val_loss-cgan.svg" alt="cGAN validation loss"></td>
+    </tr>
+</table>
 
 Training progress stats of the VAE:
-| ![VAE training loss](docs/train_loss-clf.svg) | ![VAE Kullback Leibler Divergence](docs/train_kl_loss-vae.svg) |
-|:--|:--|
-| ![VAE training reconstruction loss](docs/train_recon_loss-vae.svg) | ![VAE validation loss](docs/val_loss-vae.svg) |
+<table>
+    <tr>
+        <td width="35%"><img src="docs/train_loss-clf.svg" alt="VAE training loss"></td>
+        <td width="35%"><img src="docs/train_kl_loss-vae.svg" alt="VAE Kullback Leibler Divergence"></td>
+        <td width="30%" rowspan="2"><img src="docs/recon_demo-vae.png" alt="Reconstructed VAE samples"></td>
+    </tr>
+    <tr>
+        <td><img src="docs/train_recon_loss-vae.svg" alt="VAE training reconstruction loss"></td>
+        <td><img src="docs/val_loss-vae.svg" alt="VAE validation loss"></td>
+    </tr>
+</table>
 
-![Reconstructed VAE samples](docs/recon_demo-vae.png)
 
 Training progress stats of the classifier:
-| ![Classifier training loss](docs/train_loss-clf.svg) | ![Classifier training accuracy](docs/train_acc-clf.svg) |
-|:--|:--|
-| ![Classifier validation loss](docs/val_loss-clf.svg) | ![Classifier validation accuracy](docs/val_acc-clf.svg) |
-
-![Confusion matrix of the classifier](docs/confusion_matrix.png)
+<table>
+    <tr>
+        <td width="30%"><img src="docs/train_loss-clf.svg" alt="Classifier training loss"></td>
+        <td width="30%"><img src="docs/train_acc-clf.svg" alt="Classifier training accuracy"></td>
+        <td width="40%" rowspan="2"><img src="docs/confusion_matrix.png" alt="Confusion matrix of the classifier"></td>
+    </tr>
+    <tr>
+        <td><img src="docs/val_loss-clf.svg" alt="Classifier validation loss"></td>
+        <td><img src="docs/val_acc-clf.svg" alt="Classifier validation accuracy"></td>
+    </tr>
+</table>
 
 
 ### TODO
