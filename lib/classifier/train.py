@@ -90,7 +90,7 @@ def main(args):
     generator.eval()
 
     classifier = Classifier(in_dim=args.latent_dim, num_classes=args.num_classes,)
-    lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp,)
+    lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
 

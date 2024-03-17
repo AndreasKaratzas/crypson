@@ -1,7 +1,13 @@
 
+import os
 import torch
+import wandb
+import numpy as np
+import seaborn as sns
 import torch.nn as nn
+import matplotlib.pyplot as plt
 
+from torchmetrics.functional import confusion_matrix
 from torchmetrics import ConfusionMatrix, Accuracy
 from lightning.pytorch import LightningModule
 
@@ -9,12 +15,14 @@ from lightning.pytorch import LightningModule
 class Engine(LightningModule):
 
     def __init__(self, classifier, lr=1e-3,
-                 lnp=None, num_classes=47,):
+                 lnp=None, num_classes=47,
+                 wandb_logger=None,):
         super().__init__()
-        self.save_hyperparameters(ignore=['classifier' 'lnp', ])
+        self.save_hyperparameters(ignore=['classifier' 'lnp', 'wandb_logger'])
         self.classifier = classifier
         self.lr = lr
         self.lnp = lnp
+        self.wandb_logger = wandb_logger
         self.criterion = nn.CrossEntropyLoss()
         self.train_acc = Accuracy(
             num_classes=num_classes, task="multiclass", top_k=1)
@@ -123,11 +131,18 @@ class Engine(LightningModule):
         self.test_acc(y_hat, y_true)
         self.test_cm(y_hat, y_true)
 
+        # Store the predictions and true labels
+        if not hasattr(self, 'test_preds'):
+            self.test_preds = []
+        if not hasattr(self, 'test_labels'):
+            self.test_labels = []
+        self.test_preds.append(y_hat.detach().cpu())
+        self.test_labels.append(y_true.detach().cpu())
+
         # Log the test loss
         self.log_dict(
             {'test_loss': loss,
-             'test_accuracy': self.test_acc.compute(),
-             'test_confusion_matrix': self.test_cm.compute()},
+             'test_accuracy': self.test_acc.compute()},
             on_step=False, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
@@ -146,6 +161,39 @@ class Engine(LightningModule):
         )
         self.val_l_reg.clear()
         self.val_acc_reg.clear()
+
+    def on_test_epoch_end(self):
+        # Concatenate the predictions and true labels
+        preds = torch.cat(self.test_preds)
+        labels = torch.cat(self.test_labels)
+
+        # Compute the confusion matrix
+        cm = confusion_matrix(preds, labels, num_classes=self.hparams.num_classes)
+        cm = cm.numpy()
+
+        # Normalize the confusion matrix
+        cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+        # Create a figure and plot the confusion matrix
+        fig, ax = plt.subplots(figsize=(10, 10))
+        sns.heatmap(cm_norm, annot=True, fmt='.2f', cmap='Blues', ax=ax)
+        ax.set_xlabel('Predicted Labels')
+        ax.set_ylabel('True Labels')
+        ax.set_title('Confusion Matrix')
+
+        image_dir = os.path.join(self.trainer.log_dir, "images")
+        os.makedirs(image_dir, exist_ok=True)
+        image_path = os.path.join(
+            image_dir, f"f'confusion_matrix_epoch_{self.current_epoch}.png")
+
+        # Save the confusion matrix as an image
+        plt.tight_layout()
+        plt.savefig(image_path)
+        plt.close()
+
+        if self.wandb_logger:
+            self.wandb_logger.experiment({'confusion_matrix': wandb.Image(
+                image_path)}, step=self.global_step)
 
     def on_save_checkpoint(self, checkpoint):
         """Save Classifier.
