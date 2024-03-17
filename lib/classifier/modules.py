@@ -44,8 +44,12 @@ class Classifier(nn.Module):
             param.requires_grad = False
 
     def _load_from_pretrained_model(self, features, auto_ckpt):
-        for i, layer in enumerate(auto_ckpt):
-            features[i].load_state_dict(layer.state_dict())
+        for i, (pretrained_layer, layer) in enumerate(zip(auto_ckpt.decode, features)):
+            if isinstance(pretrained_layer, nn.Sequential):
+                for j, (pretrained_sublayer, sublayer) in enumerate(zip(pretrained_layer, layer)):
+                    sublayer.load_state_dict(pretrained_sublayer.state_dict())
+            else:
+                layer.load_state_dict(pretrained_layer.state_dict())
 
     def forward(self, latents):
         return self.features(latents)
