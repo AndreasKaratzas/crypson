@@ -41,7 +41,7 @@ class CustomDataset(Dataset):
                 noise, self.labels[idx])
             gen_img = (gen_img - gen_img.min()) / (gen_img.max() - gen_img.min())
             mu, _ = self.autoencoder.encode(gen_img)
-        return mu.squeeze(0), self.labels[idx]
+        return mu, self.labels[idx]
         
     def __len__(self):
         return self.size
