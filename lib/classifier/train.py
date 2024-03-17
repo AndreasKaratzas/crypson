@@ -88,8 +88,10 @@ def main(args):
     ckp = torch.load(args.generator, map_location=device)
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
-
-    classifier = Classifier(in_dim=args.latent_dim, num_classes=args.num_classes,)
+    
+    classifier = Classifier(in_dim=args.latent_dim, h_channels=args.hidden_channels, 
+                            f_path=args.autoencoder, img_size=args.resolution,
+                            num_classes=args.num_classes, dropout_rate=args.dropout_rate,)
     lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger)
     for n,p in lm.named_parameters():
         lnp.lnp(n + ': ' + str(p.data.shape))
@@ -171,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume', action="store_true")
     parser.add_argument('--z-dim', default=64, type=int)
     parser.add_argument('--lr', default=1e-3, type=float)
+    parser.add_argument('--dropout-rate', default=0.2, type=float)
     parser.add_argument('--train-size', default=235000, type=int)
     parser.add_argument('--test-size', default=15000, type=int)
     parser.add_argument('--resolution', default=32, type=int)

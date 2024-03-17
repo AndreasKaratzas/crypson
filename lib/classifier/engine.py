@@ -23,7 +23,7 @@ class Engine(LightningModule):
         self.lr = lr
         self.lnp = lnp
         self.wandb_logger = wandb_logger
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.NLLLoss()
         self.train_acc = Accuracy(
             num_classes=num_classes, task="multiclass", top_k=1)
         self.val_acc = Accuracy(

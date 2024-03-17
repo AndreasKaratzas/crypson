@@ -1,48 +1,49 @@
+
+import torch
 import torch.nn as nn
 
-
-class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, dropout_rate=0.2):
-        super(ResidualBlock, self).__init__()
-        self.fc1 = nn.Linear(in_channels, out_channels)
-        self.bn1 = nn.BatchNorm1d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(p=dropout_rate)
-        self.fc2 = nn.Linear(out_channels, out_channels)
-        self.bn2 = nn.BatchNorm1d(out_channels)
-
-        if in_channels != out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Linear(in_channels, out_channels),
-                nn.BatchNorm1d(out_channels)
-            )
-        else:
-            self.shortcut = nn.Identity()
-
-    def forward(self, x):
-        residual = x
-        out = self.fc1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.dropout(out)
-        out = self.fc2(out)
-        out = self.bn2(out)
-        out += self.shortcut(residual)
-        out = self.relu(out)
-        return out
+from typing import List
 
 
 class Classifier(nn.Module):
-    def __init__(self, in_dim: int, num_classes: int = 47, dropout_rate=0.2):
+    def __init__(self, in_dim: int, h_channels: List[int], f_path: str, 
+                 img_size=32, num_classes: int = 47, dropout_rate=0.2):
         super(Classifier, self).__init__()
-        self.features = nn.Sequential(
-            ResidualBlock(in_dim, 512, dropout_rate),
-            ResidualBlock(512, 512, dropout_rate),
-            ResidualBlock(512, 256, dropout_rate),
-            ResidualBlock(256, 128, dropout_rate),
-            ResidualBlock(128, 64, dropout_rate),
-            nn.Linear(64, num_classes),
-        )
+
+        features = []
+        features.append(
+            nn.Linear(in_dim, h_channels[0] * (img_size // (2 ** len(h_channels))) ** 2))
+        features.append(nn.ReLU())
+        features.append(nn.Unflatten(
+            1, (h_channels[0], img_size // 2 ** len(h_channels), img_size // 2 ** len(h_channels))))
+        for i in range(len(h_channels)):
+            features.append(nn.ConvTranspose2d(
+                h_channels[i], h_channels[i+1], kernel_size=3, stride=2, padding=1, output_padding=1))
+            features.append(nn.BatchNorm2d(h_channels[i+1]))
+            features.append(nn.ReLU())
+        features.append(
+            nn.Conv2d(h_channels[-1], 1, kernel_size=3, padding=1))
+        features.append(nn.Sigmoid())
+
+        self._load_from_pretrained_model(features, f_path)
+
+        features.append(nn.Flatten())
+        features.append(nn.Linear(h_channels[-1], 512))
+        features.append(nn.ReLU())
+        features.append(nn.Dropout(dropout_rate))
+        features.append(nn.Linear(512, num_classes))
+        features.append(nn.Softmax(dim=1))
+        self.features = nn.Sequential(*features)
+
+        for param in self.features[:(3 + (2 * len(h_channels)) + 2)].parameters():
+            print(f'param: {param}')
+            param.requires_grad = False
+
+    def _load_from_pretrained_model(self, features, f_path):
+        ckp = torch.load(f_path, map_location='cpu')
+        pretrained = ckp.get('classifier')
+        for i, layer in enumerate(pretrained):
+            features[i].load_state_dict(layer.state_dict())
 
     def forward(self, latents):
         return self.features(latents)

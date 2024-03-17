@@ -38,8 +38,9 @@ def main(args):
     generator.load_state_dict(ckp.get('generator'))
     generator.eval()
 
-    classifier = Classifier(in_dim=args.latent_dim,
-                            num_classes=args.num_classes,)
+    classifier = Classifier(in_dim=args.latent_dim, h_channels=args.hidden_channels,
+                            f_path=args.autoencoder, img_size=args.resolution,
+                            num_classes=args.num_classes, dropout_rate=args.dropout_rate,)
     ckp = torch.load(args.classifier, map_location=device)
     classifier.load_state_dict(ckp.get('classifier'))
     classifier.eval()
@@ -91,6 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--classifier', type=str)
     parser.add_argument('--resume', action="store_true")
+    parser.add_argument('--dropout-rate', default=0.2, type=float)
     parser.add_argument('--z-dim', default=64, type=int)
     parser.add_argument('--train-size', default=100, type=int)
     parser.add_argument('--test-size', default=470, type=int)
