@@ -30,18 +30,20 @@ class Classifier(nn.Module):
         features.append(nn.Sigmoid())
 
         self._load_from_pretrained_model(features, auto_ckpt)
+        self._n_out_features(features, img_size)
 
         features.append(nn.Flatten())
-        features.append(nn.Linear(h_channels[-1], 512))
+        features.append(nn.Linear(self.n_out_features, 512))
         features.append(nn.ReLU())
         features.append(nn.Dropout(dropout_rate))
         features.append(nn.Linear(512, num_classes))
         features.append(nn.Softmax(dim=1))
         self.features = nn.Sequential(*features)
 
-        for param in self.features[:(3 + (2 * num_layers) + 2)].parameters():
-            print(f'param: {param}')
-            param.requires_grad = False
+        for i, module in enumerate(self.features[:(3 + (2 * num_layers) + 2)]):
+            print(f"Freezing module {i}: {module.__class__.__name__}")
+            for param in module.parameters():
+                param.requires_grad = False
 
     def _load_from_pretrained_model(self, features, auto_ckpt):
         for i, (pretrained_layer, layer) in enumerate(zip(auto_ckpt.decode.decoder, features)):
@@ -50,6 +52,12 @@ class Classifier(nn.Module):
                     sublayer.load_state_dict(pretrained_sublayer.state_dict())
             else:
                 layer.load_state_dict(pretrained_layer.state_dict())
+
+    def _n_out_features(self, features, img_size):
+        x = torch.zeros(1, 1, img_size, img_size)
+        for layer in features:
+            x = layer(x)
+        self.n_out_features = x.flatten().shape[0]
 
     def forward(self, latents):
         return self.features(latents)
