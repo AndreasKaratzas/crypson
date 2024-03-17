@@ -1,4 +1,4 @@
-
+# https://github.com/lucidrains/DALLE2-pytorch/blob/main/dalle2_pytorch/dalle2_pytorch.py
 import math
 import torch
 import torch.nn as nn
@@ -86,14 +86,16 @@ class TimeEmbedding(nn.Module):
 
 
 if __name__ == "__main__":
-    # Example usage
     b_size = 16
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     t = torch.arange(0, b_size, device=device).float()
-    print(t.shape)
-    print(t)
-    model = TimeEmbedding(dim=8, num_time_embeds=2, device=device)
+    model = TimeEmbedding(dim=8, num_time_embeds=1, device=device)
     model.to(device)
     emb = model(t)
-    print(emb.shape)
-    print(emb)
+    ckp = {'time': model.state_dict()}
+    torch.save(ckp, '../checkpoints/time/epoch_00000-loss_0.00000.ckpt')
+    # Test loading
+    ckp = torch.load('../checkpoints/time/epoch_00000-loss_0.00000.ckpt', map_location=device)
+    model.load_state_dict(ckp.get('time'))
+    model.eval()
+    emb = model(t)
