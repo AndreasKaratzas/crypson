@@ -83,25 +83,25 @@ The test utility also compiles a confusion matrix.
 Training progress stats of the cGAN:
 <table>
     <tr>
-        <td width="35%"><img src="docs/g_loss-cgan.svg" alt="Generator cGAN training loss"></td>
-        <td width="35%"><img src="docs/d_loss-cgan.svg" alt="Discriminator cGAN training loss"></td>
+        <td width="35%"><img src="docs/g_loss-cgan.svg" alt="Generator cGAN training loss" height="100%"></td>
+        <td width="35%"><img src="docs/d_loss-cgan.svg" alt="Discriminator cGAN training loss" height="100%"></td>
         <td width="30%" rowspan="2"><img src="docs/recon_demo-cgan.png" alt="Generated cGAN samples" width="100%"></td>
     </tr>
     <tr>
-        <td colspan="2"><img src="docs/val_loss-cgan.svg" alt="cGAN validation loss"></td>
+        <td colspan="2"><img src="docs/val_loss-cgan.svg" alt="cGAN validation loss" height="100%"></td>
     </tr>
 </table>
 
 Training progress stats of the VAE:
 <table>
     <tr>
-        <td width="35%"><img src="docs/train_loss-clf.svg" alt="VAE training loss"></td>
-        <td width="35%"><img src="docs/train_kl_loss-vae.svg" alt="VAE Kullback Leibler Divergence"></td>
-        <td width="30%" rowspan="2"><img src="docs/recon_demo-vae.png" alt="Reconstructed VAE samples" width="100%"></td>
+        <td width="40%"><img src="docs/train_loss-clf.svg" alt="VAE training loss" height="100%"></td>
+        <td width="40%"><img src="docs/train_kl_loss-vae.svg" alt="VAE Kullback Leibler Divergence" height="100%"></td>
+        <td width="20%" rowspan="2"><img src="docs/recon_demo-vae.png" alt="Reconstructed VAE samples" width="100%"></td>
     </tr>
     <tr>
-        <td><img src="docs/train_recon_loss-vae.svg" alt="VAE training reconstruction loss"></td>
-        <td><img src="docs/val_loss-vae.svg" alt="VAE validation loss"></td>
+        <td><img src="docs/train_recon_loss-vae.svg" alt="VAE training reconstruction loss" height="100%"></td>
+        <td><img src="docs/val_loss-vae.svg" alt="VAE validation loss" height="100%"></td>
     </tr>
 </table>
 
@@ -109,13 +109,13 @@ Training progress stats of the VAE:
 Training progress stats of the classifier:
 <table>
     <tr>
-        <td width="30%"><img src="docs/train_loss-clf.svg" alt="Classifier training loss"></td>
-        <td width="30%"><img src="docs/train_acc-clf.svg" alt="Classifier training accuracy"></td>
+        <td width="30%"><img src="docs/train_loss-clf.svg" alt="Classifier training loss" height="100%"></td>
+        <td width="30%"><img src="docs/train_acc-clf.svg" alt="Classifier training accuracy" height="100%"></td>
         <td width="40%" rowspan="2"><img src="docs/confusion_matrix.png" alt="Confusion matrix of the classifier" width="100%"></td>
     </tr>
     <tr>
-        <td><img src="docs/val_loss-clf.svg" alt="Classifier validation loss"></td>
-        <td><img src="docs/val_acc-clf.svg" alt="Classifier validation accuracy"></td>
+        <td><img src="docs/val_loss-clf.svg" alt="Classifier validation loss" height="100%"></td>
+        <td><img src="docs/val_acc-clf.svg" alt="Classifier validation accuracy" height="100%"></td>
     </tr>
 </table>
 
