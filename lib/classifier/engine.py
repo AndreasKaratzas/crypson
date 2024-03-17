@@ -38,10 +38,10 @@ class Engine(LightningModule):
             Batch index.
         """
         latents, y_true = batch
-        print(f"latents: {latents.shape}, y_true: {y_true.shape}")
+        latents = latents.view(latents.size(0), -1)
+        y_true = y_true.view(-1)
         
         y_hat = self(latents)
-        print(f"y_hat: {y_hat.shape}")
         loss = self.criterion(y_hat, y_true)
         self.train_acc(y_hat, y_true)
         
@@ -84,6 +84,8 @@ class Engine(LightningModule):
             Batch index.
         """
         latents, y_true = batch
+        latents = latents.view(latents.size(0), -1)
+        y_true = y_true.view(-1)
         
         y_hat = self(latents)
         loss = self.criterion(y_hat, y_true)
@@ -113,6 +115,8 @@ class Engine(LightningModule):
             Batch index.
         """
         latents, y_true = batch
+        latents = latents.view(latents.size(0), -1)
+        y_true = y_true.view(-1)
 
         y_hat = self(latents)
         loss = self.criterion(y_hat, y_true)
