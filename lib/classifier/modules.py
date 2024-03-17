@@ -37,7 +37,6 @@ class Classifier(nn.Module):
         features.append(nn.ReLU())
         features.append(nn.Dropout(dropout_rate))
         features.append(nn.Linear(512, num_classes))
-        features.append(nn.LogSoftmax(dim=1))
         self.features = nn.Sequential(*features)
 
         for i, module in enumerate(self.features[:(3 + (3 * num_layers) + 2)]):
