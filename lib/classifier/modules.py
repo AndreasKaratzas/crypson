@@ -40,7 +40,7 @@ class Classifier(nn.Module):
         features.append(nn.Softmax(dim=1))
         self.features = nn.Sequential(*features)
 
-        for i, module in enumerate(self.features[:(3 + (2 * num_layers) + 2)]):
+        for i, module in enumerate(self.features[:(3 + (3 * num_layers) + 2)]):
             print(f"Freezing module {i}: {module.__class__.__name__}")
             for param in module.parameters():
                 param.requires_grad = False
