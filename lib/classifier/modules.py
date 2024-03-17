@@ -10,6 +10,9 @@ class Classifier(nn.Module):
                  img_size=32, num_classes: int = 47, dropout_rate=0.2):
         super(Classifier, self).__init__()
 
+        h_channels = [1] + h_channels
+        h_channels = h_channels[::-1]
+
         features = []
         features.append(
             nn.Linear(in_dim, h_channels[0] * (img_size // (2 ** len(h_channels))) ** 2))
