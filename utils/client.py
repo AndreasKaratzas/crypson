@@ -9,7 +9,7 @@ from rich import print as rprint
 
 class Client:
     def __init__(self, host='127.0.0.1', port=8000, 
-                 logger=None, verbose=False,
+                 logger=None, verbose=False, time_emb=None,
                  generator=None, autoencoder=None,
                  cls_indices=None, device='cpu',
                  img_size=32, z_dim=64, latent_dim=8):
@@ -17,6 +17,7 @@ class Client:
         self.port = port
         self.logger = logger
         self.verbose = verbose
+        self.time_emb = time_emb
         self.generator = generator
         self.autoencoder = autoencoder
         self.cls_indices = cls_indices
@@ -25,6 +26,7 @@ class Client:
         self.z_dim = z_dim
         self.latent_dim = latent_dim
         self.response = None
+        self.counter = 0
 
         self._ensure_evaluation_mode()
     
@@ -33,8 +35,11 @@ class Client:
             self.generator.eval()
         if self.autoencoder:
             self.autoencoder.eval()
+        if self.time_emb:
+            self.time_emb.eval()
         self.generator.to(self.device)
         self.autoencoder.to(self.device)
+        self.time_emb.to(self.device)
     
     def tokenize(self):
         tokens = []
@@ -67,16 +72,21 @@ class Client:
         space_latent = torch.zeros(1, self.latent_dim)
         newline_latent = torch.ones(1, self.latent_dim) * (-1)
         merged_latents = []
-        curr_count = 0
-        for token in self.tokens:
+        t = torch.arange(0, self.tokens, device=self.device).float() + self.counter
+        t_hat = self.time_emb(t)
+        for idx, token in enumerate(self.tokens):
             if token == space_index:
-                merged_latents.append(space_latent)
+                merged_latents.append(space_latent + t_hat[idx].view(1, -1))
             elif token == newline_index:
-                merged_latents.append(newline_latent)
+                merged_latents.append(newline_latent + t_hat[idx].view(1, -1))
             else:
-                merged_latents.append(mu[curr_count])
+                merged_latents.append(mu[curr_count] + t_hat[idx].view(1, -1))
                 curr_count += 1
         
+        self.counter += len(self.tokens)
+        if self.counter < 0:
+            self.counter = 0
+
         merged_latents = torch.stack(merged_latents)
         self.encoded_message = merged_latents.tolist()
 
