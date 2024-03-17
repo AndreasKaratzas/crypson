@@ -168,7 +168,9 @@ class Engine(LightningModule):
         labels = torch.cat(self.test_labels)
 
         # Compute the confusion matrix
-        cm = confusion_matrix(preds, labels, num_classes=self.hparams.num_classes)
+        cm = confusion_matrix(preds, labels, 
+                              task='multiclass', 
+                              num_classes=self.hparams.num_classes)
         cm = cm.numpy()
 
         # Normalize the confusion matrix
