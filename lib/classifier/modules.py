@@ -6,7 +6,7 @@ from typing import List
 
 
 class Classifier(nn.Module):
-    def __init__(self, in_dim: int, h_channels: List[int], f_path: str, 
+    def __init__(self, in_dim: int, h_channels: List[int], auto_ckpt: nn.Module,
                  img_size=32, num_classes: int = 47, dropout_rate=0.2):
         super(Classifier, self).__init__()
 
@@ -29,7 +29,7 @@ class Classifier(nn.Module):
             nn.Conv2d(h_channels[-1], 1, kernel_size=3, padding=1))
         features.append(nn.Sigmoid())
 
-        self._load_from_pretrained_model(features, f_path)
+        self._load_from_pretrained_model(features, auto_ckpt)
 
         features.append(nn.Flatten())
         features.append(nn.Linear(h_channels[-1], 512))
@@ -43,10 +43,8 @@ class Classifier(nn.Module):
             print(f'param: {param}')
             param.requires_grad = False
 
-    def _load_from_pretrained_model(self, features, f_path):
-        ckp = torch.load(f_path, map_location='cpu')
-        pretrained = ckp.get('vae')
-        for i, layer in enumerate(pretrained):
+    def _load_from_pretrained_model(self, features, auto_ckpt):
+        for i, layer in enumerate(auto_ckpt):
             features[i].load_state_dict(layer.state_dict())
 
     def forward(self, latents):

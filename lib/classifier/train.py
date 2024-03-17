@@ -90,7 +90,7 @@ def main(args):
     generator.eval()
     
     classifier = Classifier(in_dim=args.latent_dim, h_channels=args.hidden_channels, 
-                            f_path=args.autoencoder, img_size=args.resolution,
+                            auto_ckpt=autoencoder, img_size=args.resolution,
                             num_classes=args.num_classes, dropout_rate=args.dropout_rate,)
     lm = Engine(classifier=classifier, lr=args.lr, lnp=lnp, wandb_logger=wandb_logger)
     for n,p in lm.named_parameters():

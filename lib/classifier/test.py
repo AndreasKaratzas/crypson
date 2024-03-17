@@ -39,7 +39,7 @@ def main(args):
     generator.eval()
 
     classifier = Classifier(in_dim=args.latent_dim, h_channels=args.hidden_channels,
-                            f_path=args.autoencoder, img_size=args.resolution,
+                            auto_ckpt=autoencoder, img_size=args.resolution,
                             num_classes=args.num_classes, dropout_rate=args.dropout_rate,)
     ckp = torch.load(args.classifier, map_location=device)
     classifier.load_state_dict(ckp.get('classifier'))
