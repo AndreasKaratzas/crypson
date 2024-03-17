@@ -30,7 +30,7 @@ class Classifier(nn.Module):
         features.append(nn.Sigmoid())
 
         self._load_from_pretrained_model(features, auto_ckpt)
-        self._n_out_features(features, img_size)
+        self._n_out_features(features, in_dim)
 
         features.append(nn.Flatten())
         features.append(nn.Linear(self.n_out_features, 512))
@@ -53,8 +53,8 @@ class Classifier(nn.Module):
             else:
                 layer.load_state_dict(pretrained_layer.state_dict())
 
-    def _n_out_features(self, features, img_size):
-        x = torch.zeros(1, 1, img_size, img_size)
+    def _n_out_features(self, features, in_dim):
+        x = torch.zeros(1, in_dim)
         for layer in features:
             x = layer(x)
         self.n_out_features = x.flatten().shape[0]
