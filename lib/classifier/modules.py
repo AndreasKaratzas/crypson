@@ -45,7 +45,7 @@ class Classifier(nn.Module):
 
     def _load_from_pretrained_model(self, features, f_path):
         ckp = torch.load(f_path, map_location='cpu')
-        pretrained = ckp.get('classifier')
+        pretrained = ckp.get('vae')
         for i, layer in enumerate(pretrained):
             features[i].load_state_dict(layer.state_dict())
 
