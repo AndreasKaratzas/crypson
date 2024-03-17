@@ -5,11 +5,11 @@ With the recent advancements in artificial intelligence, modern neural networks 
 Neural networks are characterized by properties such as a non-linear relationship between input and output, complexity in architecture, and the ability for life-long learning. Cryptography can capitalize on these properties to build frameworks that are near-impossible to crack due to their complexity and successfully address the aforementioned challenges. To that end, this work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is split in 2 parts:
 - __The Encoder__: First, the encoder takes in a sequence of words, i.e., data stream. Then, it tokenizes this sequence of words into letters, formulating a sequence of letters $l_{k}, \; k \in {0, N}$. For each letter, the source peer initializes a random matrix. This matrix is used as a reference point for the generative model (conditional GAN) to compile an image that is going to represent the letter. After generating the image, I use a Variational Auto-Encoder (VAE). This will transpose the pixel features into a compressed and rich latent form. This is a crucial step in order to keep the computational burden of sending the data over the network a cheap operation. The resulting latent vector (_feature embedding_ in the encoder methodology figure) is going to be summed with a time embedding, which is a vector of equal length used to mask the latent space, thus making it near-impervious to deciphering it. This creates our encrypted vector $k$.
 
-![Encoder methodology](docs/encoder-source_peer-crypson-methodology.pdf)
+![Encoder methodology](docs/encoder-source_peer-crypson-methodology.png)
 
 - __The Decoder__: The first step in the decoder is unmasking the latent vector by subtracting the time embedding. This is feasible since the function for generating the time embedding is common between the source and target peers. Next, we will be using the decoder module of the trained VAE to initialize a classifier and transpose the latent features back to classes, i.e., machine-readable letters $k$.
 
-![Decoder methodology](docs/decoder-target_peer-crypson-methodology.pdf)
+![Decoder methodology](docs/decoder-target_peer-crypson-methodology.png)
 
 
 ### Pre-requisites
