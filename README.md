@@ -25,7 +25,7 @@ The first step in the decoder is unmasking the latent vector by subtracting the 
 ### Installation
 
 On Linux:
-```bash
+```powershell
 conda env create --file environment-linux.yml
 conda activate crypson
 ```
@@ -37,42 +37,42 @@ conda activate crypson
 ```
 
 If you either added or removed packages, then you can save a checkpoint of the `conda` environment by:
-```bash
+```powershell
 conda env export --no-builds > environment.yml
 ```
 
 ### Usage
 
 First, we train a conditional Generative Adversarial Network (cGAN) on the [EMNIST](https://www.nist.gov/itl/products-and-services/emnist-dataset) dataset. To train the cGAN, run the following command:
-```bash
+```powershell
 python train.py --batch-size 128 --num-epochs 200 --es-patience 1000 --val-split 0.05 --z-dim 64 --resolution 32 --gpus 0 --dataset '../../data'
 ```
 
 To evaluate the performance of the trained cGAN model, run the following command:
-```bash
+```powershell
 python test.py --model-dir './train/DCGan' --prompt-path '../../demo/gan.txt' --classes-path '../../data/idx_to_class.json' --output-dir '../../demo/results' --latent-dim 64
 ```
 This also exports some generated samples to the `demo/results` directory, for qualitative evaluation.
 
 Next, we train a Variational Autoencoder (VAE) on the generated samples from the cGAN. This reduces the dimensionality of the data and makes it cheaper for the source peer to send it to the target peer. To train the VAE, run the following command:
-```bash
+```powershell
 python train.py --batch-size 128 --num-workers 8 --generator '../../checkpoints/gan/epoch_00199-loss_0.63360.ckpt' --train-size 47000 --test-size 3000 --latent-dim 8 --kl-w 0.7 --num-epochs 100 --hidden-channels 32 64 128 256
 ```
 During validation stage, some reconstructed samples are also exported and uploaded on wandb, for qualitative evaluation.
 
 To evaluate the performance of the trained VAE model, run the following command:
-```bash
+```powershell
 python test.py --batch-size 128 --num-workers 8 --generator '../../checkpoints/gan/epoch_00199-loss_0.63360.ckpt' --autoencoder '../../checkpoints/vae/epoch_00098-loss_7669.00684.ckpt' --train-size 470 --test-size 6000 --latent-dim 8 --hidden-channels 32 64 128 256 --debug
 ```
 
 Finally, we train a classifier on the generated samples from the VAE. This classifier is used to predict the class of the received samples. To train the classifier, run the following command:
-```bash
+```powershell
 python train.py --batch-size 128 --num-workers 8 --generator '../../checkpoints/gan/epoch_00199-loss_0.63360.ckpt' --autoencoder '../../checkpoints/vae/epoch_00098-loss_7669.00684.ckpt' --train-size 94000 --test-size 6000 --latent-dim 8 --num-epochs 100 --hidden-channels 32 64 128 256
 ```
 The classifier clones the backbone of the decoder module of the VAE and adds a couple of fully connected layers on top of it. 
 
 To evaluate the performance of the trained classifier model, run the following command:
-```bash
+```powershell
 python test.py --batch-size 128 --num-workers 8 --generator '../../checkpoints/gan/epoch_00199-loss_0.63360.ckpt' --autoencoder '../../checkpoints/vae/epoch_00098-loss_7669.00684.ckpt' --classifier '../../checkpoints/classifier/epoch_00099-loss_0.90071.ckpt' --train-size 470 --test-size 6000 --latent-dim 8 --hidden-channels 32 64 128 256 --debug
 ```
 The test utility also compiles a confusion matrix.
