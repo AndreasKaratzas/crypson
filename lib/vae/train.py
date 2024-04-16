@@ -157,7 +157,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-epochs', default=10, type=int)
     parser.add_argument('--val-split', default=0.05, type=float)
     parser.add_argument('--gpus', nargs='+', default=[0], type=int)
-    parser.add_argument('--hidden-channels', nargs='+', default=[16, 32, 32, 64], type=int)
+    parser.add_argument('--hidden-channels', nargs='+', default=[32, 64, 128, 256], type=int)
     parser.add_argument('--latent-dim', default=8, type=int)
     parser.add_argument('--kl-w', default=0.5, type=float)
     parser.add_argument('--generator', type=str)

@@ -127,7 +127,7 @@ Training progress stats of the classifier:
 - [ ] Implement a quantization mechanism for the cGAN
 - [x] Implement a VAE
 - [ ] Use tensorrt and deploy the two models on a Jetson Nano
-- [ ] Create a server-client architecture to encrypt and decrypt files
+- [x] Create a server-client architecture to encrypt and decrypt files
 - [x] Create conda env files
 - [x] Complete `README.md` with instructions and experimental results
 - [ ] Post my project report and demo video under `docs` directory

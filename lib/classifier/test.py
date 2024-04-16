@@ -8,6 +8,8 @@ import warnings
 import lightning.pytorch as pl
 
 from argparse import ArgumentParser
+from rich import print as rprint
+from pathlib import Path
 
 from lib.gan.modules import Generator
 from lib.vae.modules import AutoEncoder
@@ -16,7 +18,7 @@ from lib.classifier.engine import Engine
 from lib.classifier.dataset import GenEMNISTDataModule
 from lib.classifier.registry import CustomProgressBar
 from lib.classifier.utils import get_elite
-
+from utils.emb import TimeEmbedding
 
 def main(args):
     pl.seed_everything(args.seed)
@@ -65,6 +67,45 @@ def main(args):
     trainer = pl.Trainer(accelerator='gpu', devices=args.gpus,
                         callbacks=l_callbacks,
                         logger=False)
+    try:
+        if args.enc:
+            if args.proj_path is None:
+                args.proj_path = Path.cwd().parent
+                rprint(f'Project path not provided. Using {args.proj_path}')
+            time_m_ckpt_path = Path(
+                'checkpoints/time/epoch_00000-loss_0.00000.ckpt')
+            rprint(
+                f"Pooling time module from {args.proj_path / time_m_ckpt_path}")
+
+            time_mod = TimeEmbedding(dim=8, num_time_embeds=1, device=device)
+            ckp = torch.load(
+                args.proj_path / time_m_ckpt_path, map_location=device)
+            time_mod.load_state_dict(ckp.get('time'))
+            time_mod.eval()
+            
+            return generator, autoencoder, time_mod
+    except Exception as e:
+        rprint(f'Error: {e}')    
+    
+    try:
+        if args.dec:
+            if args.proj_path is None:
+                args.proj_path = Path.cwd().parent
+                rprint(f'Project path not provided. Using {args.proj_path}')
+            time_m_ckpt_path = Path(
+                'checkpoints/time/epoch_00000-loss_0.00000.ckpt')
+            rprint(
+                f"Pooling time module from {args.proj_path / time_m_ckpt_path}")
+
+            time_mod = TimeEmbedding(dim=8, num_time_embeds=1, device=device)
+            ckp = torch.load(
+                args.proj_path / time_m_ckpt_path, map_location=device)
+            time_mod.load_state_dict(ckp.get('time'))
+            time_mod.eval()
+
+            return classifier, time_mod
+    except Exception as e:
+        rprint(f'Error: {e}')
 
     if args.debug:
         # https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#inference
@@ -91,7 +132,10 @@ if __name__ == '__main__':
     parser.add_argument('--generator', type=str)
     parser.add_argument('--autoencoder', type=str)
     parser.add_argument('--classifier', type=str)
+    parser.add_argument('--proj-path', type=str)
     parser.add_argument('--resume', action="store_true")
+    parser.add_argument('--enc', action="store_true")
+    parser.add_argument('--dec', action="store_true")
     parser.add_argument('--dropout-rate', default=0.2, type=float)
     parser.add_argument('--z-dim', default=64, type=int)
     parser.add_argument('--train-size', default=100, type=int)
