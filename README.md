@@ -120,6 +120,23 @@ Training progress stats of the classifier:
 </table>
 
 
+### Demo
+
+To run the Client-Server architecture, first start the server by running the following command:
+```powershell
+python main.py --generator "./checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "./checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "./checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --en-server-mode
+```
+
+Next, start the client by running the following command:
+```powershell
+python main.py --generator "./checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "./checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "./checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --en-client-mode
+```
+
+The client will be prompted to enter a message. The message will then be encrypted and sent to the server. The server will decrypt the message and display it on the console, and for debugging purposes, sent back to the client decrypted.
+
+To exit the application, enter `exit` in the client console. This will close the both the client and server instances.
+
+
 ### TODO
 
 - [x] Upload trained checkpoint from server to GitHub

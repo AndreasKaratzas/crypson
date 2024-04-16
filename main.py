@@ -52,7 +52,14 @@ def main(args):
                         latent_dim=args.latent_dim, idx_to_class=idx_to_class, logger=lnp)
         server.run()
 
+"""Example usage:
 
+    * For server mode:
+    >>> python main.py --generator "./checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "./checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "./checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --en-server-mode
+
+    * For client mode:
+    >>> python main.py --generator "./checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "./checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "./checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --en-client-mode --ip "127.0.0.1"
+"""
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     parser = argparse.ArgumentParser(
