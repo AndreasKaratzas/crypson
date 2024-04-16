@@ -1,5 +1,7 @@
 # Crypson
 
+![Crypson demo](docs/crypson.gif)
+
 This work presents __Crypson__, a framework that leverages modern advances in artificial intelligence to address security challenges in end-to-end encryption. Specifically, Crypson is a peer-to-peer encryption framework that uses a conditional Generative Adversarial Network (cGAN) to generate images from a sequence of letters, a Variational Auto-Encoder (VAE) to compress the images into a latent space, and a classifier to predict the class of the received samples. The framework is designed to be secure, scalable, and efficient. The security of the framework is achieved by using a time embedding to mask the latent space, making it near-impervious to deciphering. The scalability of the framework is achieved by using a VAE to compress the images into a latent space, making it cheaper for the source peer to send it to the target peer. The efficiency of the framework is achieved by using a classifier to predict the class of the received samples, making it cheaper for the target peer to decrypt the data. The framework is evaluated on the EMNIST dataset and achieves a classification accuracy of 90.77%.
 
 
@@ -147,4 +149,4 @@ To exit the application, enter `exit` in the client console. This will close the
 - [x] Create a server-client architecture to encrypt and decrypt files
 - [x] Create conda env files
 - [x] Complete `README.md` with instructions and experimental results
-- [ ] Post my project report and demo video under `docs` directory
+- [x] Post my project report and demo video under `docs` directory
