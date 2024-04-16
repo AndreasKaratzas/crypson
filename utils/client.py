@@ -160,9 +160,14 @@ class Client:
             self.encrypt_and_send()
             rprint(self.response)
             if self.prompt == 'exit':
+                self.logger.info('Exiting ...')
+                rprint('Exiting ...')
                 break
 
+"""Example usage:
 
+>>> python client.py --generator "../checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "../checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "../checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --proj-path "../" --enc
+"""
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     parser = argparse.ArgumentParser()

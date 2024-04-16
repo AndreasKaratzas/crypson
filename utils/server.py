@@ -27,7 +27,7 @@ class Server:
                  decoder=None, time_emb=None,
                  device='cpu', debug=False,
                  img_size=32, z_dim=64, latent_dim=8,
-                 idx_to_class=None):
+                 idx_to_class=None, logger=None):
         self.host = host
         self.port = port
         self.debug = debug
@@ -36,6 +36,7 @@ class Server:
         self.time_emb = time_emb
         self.img_size = img_size
         self.z_dim = z_dim
+        self.logger = logger
         self.latent_dim = latent_dim
         self.idx_to_class = idx_to_class
         self.counter = 0
@@ -76,6 +77,8 @@ class Server:
                     complete_message = json.loads(message.decode('utf-8'))
                     if self.debug:
                         rprint(f"Received complete message: {complete_message}")
+                    if self.logger:
+                        self.logger.info(f"Received complete message: {complete_message}")
                     self.tokens = complete_message['message']
                     space_latent = torch.zeros(
                         1, self.latent_dim).to(self.device)
@@ -100,6 +103,8 @@ class Server:
                             curr_count += 1
 
                     rprint(f"Decoded message: {merged_chars}")
+                    if self.logger:
+                        self.logger.info(f"Decoded message: {merged_chars}")
                     self.merged_chars = merged_chars
                     self.counter += len(self.tokens)
                     if self.counter > MAX_COUNTER_VALUE:
@@ -115,6 +120,8 @@ class Server:
                 rprint(f"Exiting after receiving `{message}` command.")
                 self.en_listen = False
                 self.merged_chars = 'Shutting down ...'
+                if self.logger:
+                    self.logger.info("Shutting down ...")
             
             conn.sendall(json.dumps(
                 {'message_received': self.merged_chars}).encode('utf-8'))
@@ -138,6 +145,10 @@ class Server:
                 s.close()
 
 
+"""Example usage:
+
+>>> python server.py --generator "../checkpoints/gan/epoch_00199-loss_0.63360.ckpt" --autoencoder "../checkpoints/vae/epoch_00098-loss_7669.00684.ckpt" --classifier "../checkpoints/classifier/epoch_00099-loss_0.90071.ckpt" --proj-path "../" --dec
+"""
 if __name__ == "__main__":
     warnings.filterwarnings('ignore')
     parser = argparse.ArgumentParser()

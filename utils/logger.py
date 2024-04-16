@@ -2,6 +2,7 @@
 import logging
 import coloredlogs
 
+from pathlib import Path
 from rich.logging import RichHandler
 
 
@@ -25,7 +26,8 @@ class Logger:
 
         # Setup logging to file if a filepath is provided.
         if filepath is not None:
-            file_handler = logging.FileHandler(filepath)
+            file_handler = logging.FileHandler(
+                Path(filepath) / Path(logger_name + '.log'))
             self.logger.addHandler(file_handler)
 
         # Setup logging format
